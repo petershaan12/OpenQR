@@ -1,13 +1,7 @@
 import { createReadableStreamFromReadable } from "@react-router/node";
 import { ServerRouter } from "react-router";
 import { renderToPipeableStream } from "react-dom/server";
-import { initDb } from "./.server/db";
 import { PassThrough } from "node:stream";
-
-// Inisialisasi Database saat server start
-initDb().catch((err) => {
-    console.error("❌ Database initialization failed:", err);
-});
 
 export default function handleRequest(
     request: Request,
