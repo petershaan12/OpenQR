@@ -251,7 +251,7 @@ export default function Dashboard() {
                         target="_blank"
                         className="text-sm font-bold text-red-600 hover:underline flex items-center gap-1.5"
                       >
-                        {window.location.host}/{qr.unique_id}
+                        {typeof window !== "undefined" ? window.location.host : ""}/{qr.unique_id}
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                       <p className="text-sm text-base-content/50 mt-0.5">

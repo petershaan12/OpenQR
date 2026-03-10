@@ -640,7 +640,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                                         >
                                             <span className="text-[10px] font-bold text-base-content/40 uppercase">Live Access URL</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-base-content truncate max-w-[200px]">{window.location.host}/{initialQRCode.unique_id}</span>
+                                                <span className="font-bold text-base-content truncate max-w-[200px]">{typeof window !== "undefined" ? window.location.host : ""}/{initialQRCode.unique_id}</span>
                                                 <Copy className="w-4 h-4 text-base-content/40" />
                                             </div>
                                         </button>

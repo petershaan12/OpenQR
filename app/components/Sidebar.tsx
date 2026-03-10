@@ -48,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
             >
                 <div className="px-5 py-4 border-b border-base-300 flex items-center justify-between">
                     <Link to="/dashboard" className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
                             <QrCode className="w-5 h-5 text-white" strokeWidth={2} />
                         </div>
                         <div>
