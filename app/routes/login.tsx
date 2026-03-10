@@ -1,11 +1,19 @@
-import { Form, useActionData, useNavigation } from "react-router";
+import { Form, useActionData, useNavigation, redirect } from "react-router";
 import { Mail, Lock, LogIn, QrCode, AlertCircle, Loader2 } from "lucide-react";
 import bcrypt from "bcryptjs";
 import { findUserByEmail } from "~/services";
-import { createSessionCookie, clearSessionCookie } from "~/.server/auth";
+import { getUserFromCookie, createSessionCookie, clearSessionCookie } from "~/.server/auth";
 
 interface ActionData {
   error?: string;
+}
+
+export async function loader({ request }: { request: Request }) {
+  const userId = getUserFromCookie(request);
+  if (userId) {
+    return redirect("/dashboard");
+  }
+  return null;
 }
 
 export async function action({ request }: { request: Request }) {

@@ -13,6 +13,9 @@ type Matches = [{
   id: "root";
   module: typeof import("../../root.js");
 }, {
+  id: "routes/protected";
+  module: typeof import("../protected.js");
+}, {
   id: "routes/create-qrcode";
   module: typeof import("../create-qrcode.js");
 }];

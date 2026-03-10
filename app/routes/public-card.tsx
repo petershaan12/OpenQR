@@ -18,7 +18,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 
     const data = await getQRCodeByUniqueId(params.id);
 
-    if (!data) {
+    if (!data || data.qr.status !== "published") {
         throw new Response("Not Found", { status: 404 });
     }
 

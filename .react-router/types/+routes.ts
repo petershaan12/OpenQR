@@ -56,6 +56,10 @@ type RouteFiles = {
     id: "login-page";
     page: "/login";
   };
+  "routes/protected.tsx": {
+    id: "routes/protected";
+    page: "/dashboard" | "/create-qrcode" | "/edit-qrcode/:id" | "/theme" | "/users" | "/account";
+  };
   "routes/dashboard.tsx": {
     id: "routes/dashboard";
     page: "/dashboard";
@@ -90,6 +94,7 @@ type RouteModules = {
   "root": typeof import("./app/root.tsx");
   "routes/login": typeof import("./app/routes/login.tsx");
   "login-page": typeof import("./app/routes/login.tsx");
+  "routes/protected": typeof import("./app/routes/protected.tsx");
   "routes/dashboard": typeof import("./app/routes/dashboard.tsx");
   "routes/create-qrcode": typeof import("./app/routes/create-qrcode.tsx");
   "routes/edit-qrcode": typeof import("./app/routes/edit-qrcode.tsx");
