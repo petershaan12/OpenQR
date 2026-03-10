@@ -119,7 +119,7 @@ export default function PublicCard() {
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col items-center font-sans" data-theme="light">
-            <div className="w-full h-screen sm:max-w-sm bg-base-100 flex flex-col relative">
+            <div className="w-full h-screen md:max-w-sm bg-base-100 flex flex-col relative">
                 <div className="flex-1 flex flex-col overflow-y-auto">
 
                     {/* Hero Photo — large, no overlay */}

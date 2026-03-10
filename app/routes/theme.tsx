@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import { useLoaderData, Form, useSearchParams } from "react-router";
-import { Plus, Trash2, Edit2, X, Check, Palette, Type, Save, AlertCircle } from "lucide-react";
+import { useLoaderData, Form, useSearchParams, useNavigation } from "react-router";
+import { Plus, Trash2, Edit2, X, Check, Palette, Type, Save, AlertCircle, Loader2 } from "lucide-react";
 import { requireUser } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
 import ThemeModal from "~/components/ThemeModal";
@@ -67,16 +67,19 @@ export async function action({ request }: { request: Request }) {
 
 export default function Theme() {
   const { user, themes, notifications } = useLoaderData<any>();
+  const navigation = useNavigation();
   const [searchParams] = useSearchParams();
   const errorParam = searchParams.get("error");
   const modalRef = useRef<HTMLDialogElement>(null);
   const [editingTheme, setEditingTheme] = useState<any>(null);
   const [welcomeImage, setWelcomeImage] = useState<string | null>(null);
   const [enableWelcome, setEnableWelcome] = useState<boolean>(true);
+  const [primaryColor, setPrimaryColor] = useState<string>("#dc2626");
 
   const handleEdit = (theme: any) => {
     setEditingTheme(theme);
     setWelcomeImage(theme.welcome_image || null);
+    setPrimaryColor(theme.primary_color || "#dc2626");
     setEnableWelcome(theme.enable_welcome !== 0 && theme.enable_welcome !== false && theme.enable_welcome !== "false");
     modalRef.current?.showModal();
   };
@@ -84,6 +87,7 @@ export default function Theme() {
   const handleCreateNew = () => {
     setEditingTheme(null);
     setWelcomeImage(null);
+    setPrimaryColor("#dc2626");
     setEnableWelcome(true);
     modalRef.current?.showModal();
   };
@@ -145,8 +149,18 @@ export default function Theme() {
                       </button>
                       <Form method="post" onSubmit={(e) => !confirm("Delete this theme?") && e.preventDefault()}>
                         <input type="hidden" name="id" value={t.id} />
-                        <button type="submit" name="_action" value="delete" className="btn btn-ghost btn-sm btn-square hover:bg-error/10 hover:text-error">
-                          <Trash2 className="w-4 h-4" />
+                        <button
+                          type="submit"
+                          name="_action"
+                          value="delete"
+                          disabled={navigation.state !== "idle"}
+                          className="btn btn-ghost btn-sm btn-square hover:bg-error/10 hover:text-error disabled:opacity-50"
+                        >
+                          {navigation.state !== "idle" && navigation.formData?.get("id") === String(t.id) && navigation.formData?.get("_action") === "delete" ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-error" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </button>
                       </Form>
                     </>
@@ -176,6 +190,8 @@ export default function Theme() {
         welcomeImage={welcomeImage}
         setWelcomeImage={setWelcomeImage}
         handleImageUpload={handleImageUpload}
+        primaryColor={primaryColor}
+        setPrimaryColor={setPrimaryColor}
       />
     </DashboardLayout>
   );

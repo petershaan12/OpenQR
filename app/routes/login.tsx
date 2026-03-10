@@ -1,5 +1,5 @@
-import { Form, useActionData } from "react-router";
-import { Mail, Lock, LogIn, QrCode, AlertCircle } from "lucide-react";
+import { Form, useActionData, useNavigation } from "react-router";
+import { Mail, Lock, LogIn, QrCode, AlertCircle, Loader2 } from "lucide-react";
 import bcrypt from "bcryptjs";
 import { findUserByEmail } from "~/services";
 import { createSessionCookie, clearSessionCookie } from "~/.server/auth";
@@ -42,6 +42,8 @@ export async function action({ request }: { request: Request }) {
 
 export default function Login() {
   const actionData = useActionData<ActionData>();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-base-200 p-4">
@@ -107,10 +109,15 @@ export default function Login() {
 
             <button
               type="submit"
-              className="btn-army w-full justify-center py-6 text-base"
+              disabled={isSubmitting}
+              className="btn-army w-full justify-center py-6 text-base disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <LogIn className="w-4 h-4" />
-              Sign In
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <LogIn className="w-4 h-4" />
+              )}
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
           </Form>
         </div>

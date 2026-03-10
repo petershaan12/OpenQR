@@ -1,5 +1,5 @@
-import { Form } from "react-router";
-import { Palette, Type, Plus, X, Save, Edit2 } from "lucide-react";
+import { Form, useNavigation } from "react-router";
+import { Palette, Type, Plus, X, Save, Edit2, Loader2 } from "lucide-react";
 import { RefObject } from "react";
 
 export default function ThemeModal({
@@ -9,7 +9,9 @@ export default function ThemeModal({
     setEnableWelcome,
     welcomeImage,
     setWelcomeImage,
-    handleImageUpload
+    handleImageUpload,
+    primaryColor,
+    setPrimaryColor
 }: {
     modalRef: RefObject<HTMLDialogElement | null>;
     editingTheme: any;
@@ -18,7 +20,12 @@ export default function ThemeModal({
     welcomeImage: string | null;
     setWelcomeImage: (val: string | null) => void;
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => void;
+    primaryColor: string;
+    setPrimaryColor: (val: string) => void;
 }) {
+    const navigation = useNavigation();
+    const isSubmitting = navigation.state === "submitting" &&
+        (navigation.formData?.get("_action") === "create" || navigation.formData?.get("_action") === "update");
     return (
         <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
             <div className="modal-box p-0 overflow-hidden border border-base-300 shadow-2xl rounded-lg bg-base-100">
@@ -52,14 +59,16 @@ export default function ThemeModal({
                             <input
                                 type="color"
                                 name="primary_color"
-                                defaultValue={editingTheme?.primary_color || "#dc2626"}
+                                value={primaryColor}
+                                onChange={(e) => setPrimaryColor(e.target.value)}
                                 className="w-12 h-12 rounded-lg cursor-pointer border-2 border-base-300 p-1 bg-white"
                             />
                             <input
                                 type="text"
                                 placeholder="#dc2626"
                                 className="input input-bordered grow font-mono font-bold"
-                                defaultValue={editingTheme?.primary_color || "#dc2626"}
+                                value={primaryColor}
+                                onChange={(e) => setPrimaryColor(e.target.value)}
                             />
                         </div>
                     </div>
@@ -133,9 +142,19 @@ export default function ThemeModal({
                         <form method="dialog">
                             <button className="btn btn-ghost font-bold">Cancel</button>
                         </form>
-                        <button type="submit" name="_action" value={editingTheme ? "update" : "create"} className="btn-army px-6 gap-2">
-                            {editingTheme ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                            {editingTheme ? "Update Theme" : "Create Theme"}
+                        <button
+                            type="submit"
+                            name="_action"
+                            value={editingTheme ? "update" : "create"}
+                            disabled={isSubmitting}
+                            className="btn-army px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                editingTheme ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />
+                            )}
+                            {isSubmitting ? (editingTheme ? "Updating..." : "Creating...") : (editingTheme ? "Update Theme" : "Create Theme")}
                         </button>
                     </div>
                 </Form>
