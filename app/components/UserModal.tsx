@@ -22,7 +22,7 @@ export default function UserModal({
                     </form>
                 </div>
 
-                <Form method="post" onSubmit={() => modalRef.current?.close()} className="px-6 py-6 space-y-4">
+                <Form key={editingUser?.id || "new"} method="post" onSubmit={() => modalRef.current?.close()} className="px-6 py-6 space-y-4">
                     {editingUser && <input type="hidden" name="id" value={editingUser.id} />}
 
                     <div className="form-control">
