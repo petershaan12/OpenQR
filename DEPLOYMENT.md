@@ -149,4 +149,4 @@ Docker akan secara otomatis melakukan rebuild image yang berubah.
 
 ---
 
-**ArmyQR Team** - (c) 2026 🇮🇩
+**ArmyQR Team** - © 2026 🇮🇩

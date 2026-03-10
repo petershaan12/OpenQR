@@ -66,8 +66,8 @@ ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO themes (id, name, primary_color, legal_info, user_id)
 VALUES
-  (1, 'ARMY', '#DC2626', '(c) 2024 Army Security. All Rights Reserved.', 1),
-  (2, 'RPQ', '#2563EB', '(c) 2024 RPQ Corp. All Rights Reserved.', 1)
+  (1, 'ARMY', '#DC2626', '© 2024 Army Security. All Rights Reserved.', 1),
+  (2, 'RPQ', '#2563EB', '© 2024 RPQ Corp. All Rights Reserved.', 1)
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO qrcodes (id, user_id, name, surname, title, email, social_network, theme_id, status, scans, unique_id)
