@@ -26,7 +26,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   const user = await getUserById(userId);
   const qrcodes = await getUserQRCodes(userId);
   const notifications = await getUserNotifications(userId);
-  return { user, qrcodes, notifications };
+
+  const url = new URL(request.url);
+  const origin = url.origin;
+  const host = url.host;
+
+  return { user, qrcodes, notifications, origin, host };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -49,7 +54,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Dashboard() {
-  const { user, qrcodes, notifications } = useLoaderData<typeof loader>();
+  const { user, qrcodes, notifications, origin, host } = useLoaderData<typeof loader>();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -80,7 +85,7 @@ export default function Dashboard() {
   const toggleSelect = (id: number) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
   const copyLink = (uniqueId: string) => {
-    const text = `${window.location.origin}/${uniqueId}`;
+    const text = `${origin}/${uniqueId}`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
         setShowToast(true);
@@ -229,7 +234,7 @@ export default function Dashboard() {
                     <div className="bg-white border border-base-300 p-2 rounded-lg inline-flex shadow-sm group-hover:scale-105 transition-transform duration-300">
                       <QRCodeSVG
                         id={`qr-${qr.unique_id}`}
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/${qr.unique_id}`}
+                        value={`${origin}/${qr.unique_id}`}
                         size={72}
                         level="H"
                         includeMargin={false}
@@ -251,7 +256,7 @@ export default function Dashboard() {
                         target="_blank"
                         className="text-sm font-bold text-red-600 hover:underline flex items-center gap-1.5"
                       >
-                        {typeof window !== "undefined" ? window.location.host : ""}/{qr.unique_id}
+                        {host}/{qr.unique_id}
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                       <p className="text-sm text-base-content/50 mt-0.5">
@@ -268,10 +273,10 @@ export default function Dashboard() {
 
                   {/* Modified date */}
                   <td className="hidden lg:table-cell">
-                    <p className="font-bold">
+                    <p className="font-bold" suppressHydrationWarning>
                       {new Date(qr.updated_at || qr.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
-                    <p className="text-xs text-base-content/30">
+                    <p className="text-xs text-base-content/30" suppressHydrationWarning>
                       Created {new Date(qr.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
                   </td>

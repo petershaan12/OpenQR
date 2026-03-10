@@ -165,7 +165,7 @@ export default function Users() {
                                             {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
                                         </div>
                                     </td>
-                                    <td className="hidden lg:table-cell text-sm text-base-content/50">
+                                    <td className="hidden lg:table-cell text-sm text-base-content/50" suppressHydrationWarning>
                                         {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                     </td>
                                     <td className="overflow-visible">

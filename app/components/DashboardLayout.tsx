@@ -68,7 +68,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, subt
                                                                 {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>}
                                                             </div>
                                                             <p className="text-[10px] text-base-content/60 leading-tight mt-0.5 line-clamp-2">{n.message}</p>
-                                                            <p className="text-[9px] text-base-content/30 font-bold mt-1.5 uppercase">
+                                                            <p className="text-[9px] text-base-content/30 font-bold mt-1.5 uppercase" suppressHydrationWarning>
                                                                 {n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                                                             </p>
                                                         </div>
