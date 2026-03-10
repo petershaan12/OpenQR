@@ -37,7 +37,7 @@ type Pages = {
   "/account": {
     params: {};
   };
-  "/public-card/:id": {
+  "/:id": {
     params: {
       "id": string;
     };
@@ -47,7 +47,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/dashboard" | "/create-qrcode" | "/edit-qrcode/:id" | "/theme" | "/users" | "/account" | "/public-card/:id";
+    page: "/" | "/login" | "/dashboard" | "/create-qrcode" | "/edit-qrcode/:id" | "/theme" | "/users" | "/account" | "/:id";
   };
   "routes/login.tsx": {
     id: "routes/login";
@@ -82,7 +82,7 @@ type RouteFiles = {
   };
   "routes/public-card.tsx": {
     id: "routes/public-card";
-    page: "/public-card/:id";
+    page: "/:id";
   };
 };
 

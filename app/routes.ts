@@ -9,5 +9,5 @@ export default [
   route("theme", "routes/theme.tsx"),
   route("users", "routes/users.tsx"),
   route("account", "routes/account.tsx"),
-  route("public-card/:id", "routes/public-card.tsx"),
+  route(":id", "routes/public-card.tsx"),
 ] satisfies RouteConfig;

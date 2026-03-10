@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS themes (
   legal_info TEXT,
   welcome_screen_time INT DEFAULT 5,
   welcome_image LONGTEXT,
+  enable_welcome BOOLEAN DEFAULT FALSE,
   user_id INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -29,7 +30,7 @@ CREATE TABLE IF NOT EXISTS qrcodes (
   title VARCHAR(100),
   email VARCHAR(100),
   profile_image LONGTEXT,
-  social_network VARCHAR(255),
+  social_network TEXT,
   theme_id INT,
   status ENUM('draft', 'published') DEFAULT 'draft',
   scans INT DEFAULT 0,
@@ -70,7 +71,7 @@ VALUES
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO qrcodes (id, user_id, name, surname, title, email, social_network, theme_id, status, scans, unique_id)
-VALUES (1, 1, 'John', 'Doe', 'Business Development', 'john@armysecurity.com', 'armysecurityguard.com', 1, 'published', 124, 'john-doe-123')
+VALUES (1, 1, 'Peter', 'Shaan', 'Fullstack Development', 'peter@armysecurity.com', '{"Website":"https://petershaan.net","Instagram":"https://instagram.com/petershaan_"}', 1, 'published', 124, 'peter-shaan-782')
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO qrcode_phones (id, qrcode_id, phone)

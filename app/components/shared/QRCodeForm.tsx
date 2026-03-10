@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, useNavigate, useSearchParams, useNavigation } from "react-router";
+import { Form, useNavigate, useSearchParams, useNavigation, useActionData } from "react-router";
 import {
     Upload,
     Plus,
@@ -45,10 +45,12 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
     );
     const [selectedSocial, setSelectedSocial] = useState<string>("Instagram");
     const [error, setError] = useState<string | null>(null);
+    const actionData = useActionData<any>();
 
     const navigation = useNavigation();
     const isSubmitting = navigation.state !== "idle";
     const [showToast, setShowToast] = useState(false);
+    const [lastSavedData, setLastSavedData] = useState<any>(initialQRCode);
 
     useEffect(() => {
         if (showToast) {
@@ -59,9 +61,33 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
 
     const copyToClipboard = (text: string) => {
         if (typeof window !== 'undefined') {
-            navigator.clipboard.writeText(text).then(() => {
-                setShowToast(true);
-            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    setShowToast(true);
+                }).catch(() => {
+                    // Fallback
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    setShowToast(true);
+                });
+            } else {
+                // Fallback for older browsers or non-secure contexts
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setShowToast(true);
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+                document.body.removeChild(textArea);
+            }
         }
     };
 
@@ -83,6 +109,30 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
     const [socialLinks, setSocialLinks] = useState<Record<string, string>>(getInitialSocialLinks());
     const [currentSocialValue, setCurrentSocialValue] = useState("");
 
+    // Effect to initialize currentSocialValue from socialLinks
+    useEffect(() => {
+        if (socialLinks[selectedSocial]) {
+            setCurrentSocialValue(socialLinks[selectedSocial]);
+        } else {
+            setCurrentSocialValue("");
+        }
+    }, [selectedSocial, socialLinks]);
+
+    // Effect to handle action success
+    useEffect(() => {
+        if (actionData?.success) {
+            setShowToast(true);
+            // On success, update lastSavedData to current state
+            setLastSavedData({
+                ...formData,
+                profile_image: profileImage,
+                phones: phoneInputs.map(p => ({ phone: p.value })),
+                email: emailInputs[0], // Simplified assuming first email is main
+                social_network: JSON.stringify(socialLinks)
+            });
+        }
+    }, [actionData]);
+
     const [formData, setFormData] = useState<FormData & { status: string }>({
         name: initialQRCode?.name || "",
         surname: initialQRCode?.surname || "",
@@ -96,6 +146,19 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
     useEffect(() => {
         setFormData(prev => ({ ...prev, social_network: JSON.stringify(socialLinks) }));
     }, [socialLinks]);
+
+    // Check if form is dirty
+    const isDirty = (
+        (formData.name || "") !== (lastSavedData?.name || "") ||
+        (formData.surname || "") !== (lastSavedData?.surname || "") ||
+        (formData.title || "") !== (lastSavedData?.title || "") ||
+        (formData.theme_id || "") !== (lastSavedData?.theme_id || "") ||
+        (formData.status || "draft") !== (lastSavedData?.status || "draft") ||
+        (profileImage || null) !== (lastSavedData?.profile_image || null) ||
+        JSON.stringify(phoneInputs.map(p => ({ phone: p.value }))) !== JSON.stringify(lastSavedData?.phones?.map((p: any) => ({ phone: p.phone })) || [{ phone: "" }]) ||
+        (emailInputs[0] || "") !== (lastSavedData?.email || "") ||
+        JSON.stringify(socialLinks) !== (lastSavedData?.social_network && (lastSavedData.social_network.startsWith('{') || lastSavedData.social_network.startsWith('[')) ? lastSavedData.social_network : JSON.stringify({ "Website": lastSavedData?.social_network || "" }))
+    );
 
     const selectedTheme =
         themes.find((t: any) => String(t.id) === String(formData.theme_id)) || themes[0];
@@ -111,12 +174,13 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
         }
     };
 
-    const handleNextStep = () => {
+    const handleNextStep = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!formData.name.trim() || !formData.surname.trim() || !formData.title.trim()) {
             setError("First Name, Last Name, and Job Title are required.");
             return;
         }
-
         // Social validation
         for (const [platform, url] of Object.entries(socialLinks)) {
             if (url && !validateSocialLink(platform, url)) {
@@ -131,20 +195,8 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
             setError("At least one Phone Number or Email is required.");
             return;
         }
-
         setError(null);
-        if (mode === 'create') {
-            // For create, we need to submit to get the ID for step 2
-            const form = document.getElementById('qrcode-form') as HTMLFormElement;
-            const submitter = document.createElement('input');
-            submitter.type = 'hidden';
-            submitter.name = '_action';
-            submitter.value = 'create_qrcode';
-            form.appendChild(submitter);
-            form.requestSubmit();
-        } else {
-            setStep(2);
-        }
+        setStep(2);
     };
 
     return (
@@ -154,7 +206,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                 <div className="toast toast-top toast-center z-[100] animate-in slide-in-from-top duration-300">
                     <div className="alert alert-success shadow-lg border-none bg-success text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
                         <Check className="w-5 h-5" />
-                        <span>Link copied to clipboard!</span>
+                        <span>{actionData?.success ? "Changes saved successfully!" : "Link copied to clipboard!"}</span>
                     </div>
                 </div>
             )}
@@ -200,8 +252,8 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                                 type="submit"
                                 name="_action"
                                 value={mode === 'create' ? "create_qrcode" : "update_qrcode"}
-                                className="btn-army px-6"
-                                disabled={isSubmitting}
+                                className="btn-army px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={isSubmitting || !isDirty}
                             >
                                 {isSubmitting ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -568,22 +620,27 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                                             themeColor={qrColor}
                                         />
                                     ) : (
-                                        <div className="w-44 h-44 flex items-center justify-center">
-                                            <span className="loading loading-spinner loading-lg" style={{ color: primaryColor }}></span>
+                                        <div className="w-44 h-44 flex flex-col items-center justify-center text-center p-4">
+                                            <div className="w-12 h-12 bg-base-200 rounded-lg flex items-center justify-center mb-3">
+                                                <QrCode className="w-6 h-6 text-base-content/20" />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-tight">
+                                                QR Code will be generated<br />after you <span className="text-primary">Publish</span> or <span className="text-primary">Save</span>
+                                            </p>
                                         </div>
                                     )}
                                 </div>
 
-                                {initialQRCode?.unique_id && (
+                                {initialQRCode?.unique_id ? (
                                     <div className="flex flex-col gap-2 w-full">
                                         <button
                                             type="button"
-                                            onClick={() => copyToClipboard(`${window.location.origin}/public-card/${initialQRCode.unique_id}`)}
+                                            onClick={() => copyToClipboard(`${window.location.origin}/${initialQRCode.unique_id}`)}
                                             className="btn btn-ghost bg-base-200 border border-base-300 h-14 rounded-lg flex flex-col items-center justify-center p-0"
                                         >
                                             <span className="text-[10px] font-bold text-base-content/40 uppercase">Live Access URL</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-base-content truncate max-w-[200px]">{initialQRCode.unique_id}.armyqr.com</span>
+                                                <span className="font-bold text-base-content truncate max-w-[200px]">{window.location.host}/{initialQRCode.unique_id}</span>
                                                 <Copy className="w-4 h-4 text-base-content/40" />
                                             </div>
                                         </button>
@@ -595,6 +652,12 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                                             <Download className="w-5 h-5" />
                                             <span className="font-bold">Download PNG</span>
                                         </button>
+                                    </div>
+                                ) : (
+                                    <div className="w-full p-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase text-center italic">
+                                            Actions will be available after saving
+                                        </p>
                                     </div>
                                 )}
 
@@ -658,7 +721,7 @@ function ClientOnlyQRCode({ uniqueId, themeColor }: { uniqueId: string, themeCol
     return (
         <QRCodeSVG
             id="qr-code-svg"
-            value={`${window.location.origin}/public-card/${uniqueId}`}
+            value={`${window.location.origin}/${uniqueId}`}
             size={180}
             bgColor="#FFFFFF"
             fgColor={themeColor}

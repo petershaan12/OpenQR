@@ -80,9 +80,34 @@ export default function Dashboard() {
   const toggleSelect = (id: number) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
   const copyLink = (uniqueId: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/public-card/${uniqueId}`).then(() => {
-      setShowToast(true);
-    });
+    const text = `${window.location.origin}/${uniqueId}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setShowToast(true);
+      }).catch(() => {
+        // Fallback
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setShowToast(true);
+      });
+    } else {
+      // Fallback
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setShowToast(true);
+      } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const downloadQRCode = (uniqueId: string, name: string) => {
@@ -204,7 +229,7 @@ export default function Dashboard() {
                     <div className="bg-white border border-base-300 p-2 rounded-lg inline-flex shadow-sm group-hover:scale-105 transition-transform duration-300">
                       <QRCodeSVG
                         id={`qr-${qr.unique_id}`}
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/public-card/${qr.unique_id}`}
+                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/${qr.unique_id}`}
                         size={72}
                         level="H"
                         includeMargin={false}
@@ -222,11 +247,11 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <Link
-                        to={`/public-card/${qr.unique_id}`}
+                        to={`/${qr.unique_id}`}
                         target="_blank"
                         className="text-sm font-bold text-red-600 hover:underline flex items-center gap-1.5"
                       >
-                        {qr.unique_id}.armyqr.com
+                        {window.location.host}/{qr.unique_id}
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                       <p className="text-sm text-base-content/50 mt-0.5">

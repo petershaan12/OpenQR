@@ -41,7 +41,7 @@ export async function createQRCode(data: {
   const db = getDb();
 
   // Generate unique ID or use provided one
-  let uniqueId = data.unique_id || generateUniqueId();
+  let uniqueId = data.unique_id || generateUniqueId(data.name, data.surname);
   let isUnique = false;
   let attempts = 0;
 
@@ -54,7 +54,7 @@ export async function createQRCode(data: {
     if (existing.length === 0) {
       isUnique = true;
     } else {
-      uniqueId = generateUniqueId();
+      uniqueId = generateUniqueId(data.name, data.surname);
       attempts++;
     }
   }

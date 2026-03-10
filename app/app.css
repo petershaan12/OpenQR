@@ -169,3 +169,23 @@ textarea:focus {
 .dark [show-scrollbar]::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
 }
+
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-duration: 300ms;
+  animation-fill-mode: both;
+}
+
+.slide-in-from-top {
+  animation-name: slide-in-from-top;
+}
