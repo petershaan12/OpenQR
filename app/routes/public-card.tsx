@@ -39,6 +39,10 @@ function generateVCard(qr: any, phones: any[]) {
         vcard += `TITLE:${qr.title}\n`;
     }
 
+    if (qr.organization) {
+        vcard += `ORG:${qr.organization}\n`;
+    }
+
     phones.forEach((p: any) => {
         if (p.value) {
             vcard += `TEL;TYPE=CELL:${p.value}\n`;
@@ -46,43 +50,82 @@ function generateVCard(qr: any, phones: any[]) {
     });
 
     if (qr.email) {
-        vcard += `EMAIL:${qr.email}\n`;
+        vcard += `EMAIL;TYPE=INTERNET:${qr.email}\n`;
     }
 
+    // Add social links as URLs
     if (qr.social_network) {
         try {
-            const social = JSON.parse(qr.social_network);
+            let social = {};
+            if (qr.social_network.startsWith('{') || qr.social_network.startsWith('[')) {
+                social = JSON.parse(qr.social_network);
+            } else {
+                social = { "Website": qr.social_network };
+            }
+
             Object.entries(social).forEach(([key, val]) => {
-                if (val) vcard += `URL;TYPE=${key}:${val}\n`;
+                if (val) {
+                    const url = String(val).startsWith('http') ? val : `https://${val}`;
+                    vcard += `URL;TYPE=${key}:${url}\n`;
+                }
             });
         } catch (e) {
-            vcard += `URL:${qr.social_network}\n`;
+            const url = String(qr.social_network).startsWith('http') ? qr.social_network : `https://${qr.social_network}`;
+            vcard += `URL:${url}\n`;
         }
     }
 
     if (qr.profile_image && qr.profile_image.startsWith('data:')) {
-        const base64Data = qr.profile_image.split(',')[1];
+        const parts = qr.profile_image.split(',');
+        const mimeType = parts[0].split(':')[1].split(';')[0];
+        const base64Data = parts[1];
         if (base64Data) {
-            vcard += `PHOTO;ENCODING=b;TYPE=JPEG:${base64Data}\n`;
+            const type = mimeType.split('/')[1].toUpperCase();
+            vcard += `PHOTO;TYPE=${type};ENCODING=b:${base64Data}\n`;
         }
     }
 
+    vcard += `REV:${new Date().toISOString()}\n`;
     vcard += `END:VCARD`;
     return vcard;
 }
 
-function downloadVCard(qr: any, phones: any[]) {
+async function downloadVCard(qr: any, phones: any[]) {
     const vcard = generateVCard(qr, phones);
+    const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
+    const fileName = `${displayName.replace(/\s+/g, '_')}.vcf`;
     const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
+
+    // Try to use Web Share API for a more native feel on mobile
+    if (navigator.share && navigator.canShare) {
+        try {
+            const file = new File([blob], fileName, { type: 'text/vcard' });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: displayName,
+                });
+                return;
+            }
+        } catch (e) {
+            console.error("Share failed", e);
+        }
+    }
+
+    // Fallback: Traditional download
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
     link.href = url;
-    link.download = `${displayName.replace(/\s+/g, '_')}.vcf`;
+    link.setAttribute('download', fileName);
+    link.setAttribute('target', '_blank');
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+
+    // Cleanup
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 100);
 }
 
 export default function PublicCard() {

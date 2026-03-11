@@ -1,106 +1,94 @@
-# 🚀 Deployment Guide: ArmyQR Code Management
+# Deployment Guide
 
-Panduan profesional untuk mengdeploy sistem **ArmyQR** menggunakan **Docker Compose**, **MySQL 8.0**, dan **React Router v7** (Production Mode).
+Panduan ini untuk skenario production sesuai setup kamu:
+- Aplikasi jalan pakai Docker Compose
+- MySQL jalan dalam Docker
+- Nginx reverse proxy sudah ada di server (container terpisah, port 80)
+- Inisialisasi database dilakukan manual via SQL (bukan auto dari app)
 
----
+## 1. Prasyarat
 
-## 🏗️ 1. Architecture Overview
+Pastikan server sudah ada:
+- Docker
+- Docker Compose
+- Nginx reverse proxy existing (contoh: `nginx-proxy` container di port 80)
+- DNS domain mengarah ke IP server
 
-Sistem ini dirancang untuk dijalankan di VPS/Server Linux dengan konfigurasi:
-
-- **App Service:** React Router v7 (Port 3000 internal).
-- **Database Service:** MySQL 8.0 (Port 3306 internal).
-- **Reverse Proxy:** Nginx (External atau Internal Proxy Manager).
-
----
-
-## 🛠️ 2. Prasyarat Sistem
-
-Pastikan server Anda sudah terinstall:
-
-- ✅ **Docker** (v20.10+)
-- ✅ **Docker Compose** (v2.x+)
-- ✅ **Git**
-- ✅ **Domain Nama** (Point ke IP Public Server)
-
----
-
-## 📂 3. Persiapan Deployment
-
-### A. Clone Repository
+## 2. Clone dan Setup Env
 
 ```bash
 git clone <repo-url>
 cd qr-code
 ```
 
-### B. Konfigurasi Environment (`.env`)
+Buat/cek `.env` di root project:
 
-Salin file `.env` dan sesuaikan nilainya:
-
-```bash
-# Database Config
+```env
 MYSQL_ROOT_PASSWORD=Indonesia77
 MYSQL_DATABASE=army_qrcode
+SESSION_SECRET=replace-with-strong-random-secret
 MYSQL_PORT=3306
-
-# App Config
 APP_PORT=3000
 APP_PUBLIC_PORT=3001
-SESSION_SECRET=UBAH_DENGAN_RANDOM_STRING_YANG_KUAT
 ```
 
-> [!IMPORTANT]
-> Jangan lupa mengubah `SESSION_SECRET` di production untuk keamanan sesi user.
+Keterangan:
+- `APP_PORT`: port internal app di container
+- `APP_PUBLIC_PORT`: port app di host server (yang diproxy nginx existing)
 
----
-
-## ⚙️ 4. Menjalankan Layanan
-
-Jalankan seluruh stack aplikasi di background:
+## 3. Jalankan Service
 
 ```bash
 docker compose up -d --build
 ```
 
-Verifikasi kesehatan layanan:
+Cek status:
 
 ```bash
 docker compose ps
 ```
 
-Pastikan statusnya **Running (Healthy)**.
+Dengan config saat ini:
+- App expose ke host di `APP_PUBLIC_PORT` (default `3001`)
+- MySQL expose ke host di `MYSQL_PORT` (default `3306`)
 
----
+## 4. Inisialisasi Database (Sekali Saja)
 
-## 🗄️ 5. Inisialisasi Database (Wajib Dilakukan Sekali)
+SQL schema+seed ada di:
+- `database/init.sql`
 
-Gunakan perintah di bawah untuk memasukkan schema dan data awal (Peter Shaan seed):
-
-**Via Linux/Bash (Recommended):**
+Jalankan command ini (Linux/bash):
 
 ```bash
 docker exec -i army_qrcode_mysql mysql -uroot -p"Indonesia77" "army_qrcode" < database/init.sql
 ```
 
-### 🧹 Cara Reset Database (Jika Perlu)
+Untuk PowerShell:
 
-Jika Anda ingin menghapus data lama dan mulai dari awal:
+```powershell
+Get-Content .\database\init.sql | docker exec -i army_qrcode_mysql mysql -uroot -pIndonesia77 army_qrcode
+```
 
-1. Matikan container: `docker compose down -v`
-2. Jalankan kembali: `docker compose up -d`
-3. Jalankan inisialisasi SQL di atas.
+Validasi tabel:
 
----
+```bash
+docker exec -it army_qrcode_mysql mysql -uroot -pIndonesia77 -e "USE army_qrcode; SHOW TABLES;"
+```
 
-## 🌐 6. Konfigurasi Nginx Reverse Proxy
+Catatan:
+- Warning `Using a password on the command line interface can be insecure` itu normal.
+- Inisialisasi cukup sekali. Deploy berikutnya tidak perlu ulang kecuali reset DB.
 
-Untuk menghubungkan domain Anda (misal: `qr.armysecurity.com`), arahkan proxy nginx ke port **3001** di host:
+## 5. Konfigurasi Nginx Existing untuk Domain Baru
+
+Karena nginx utama sudah ada di server, buat server block untuk domain baru dan arahkan ke app di `127.0.0.1:3001`.
+
+Contoh config:
 
 ```nginx
 server {
     listen 80;
-    server_name qr.armysecurity.com;
+    server_name qr.domainbaru.com;
 
     location / {
         proxy_pass http://127.0.0.1:3001;
@@ -115,38 +103,54 @@ server {
 }
 ```
 
----
-
-## 🔄 7. Cara Update Aplikasi
-
-Setiap kali ada perubahan code, cukup jalankan:
+Reload nginx:
 
 ```bash
-git pull origin main
+nginx -t && nginx -s reload
+```
+
+Jika nginx kamu bukan host-level tapi containerized reverse proxy manager, sesuaikan lewat mekanisme tool tersebut (UI/labels/vhost mapping).
+
+## 6. Update Deployment
+
+Saat ada update code:
+
+```bash
+git pull
 docker compose up -d --build
 ```
 
-Docker akan secara otomatis melakukan rebuild image yang berubah.
+## 7. Troubleshooting Cepat
 
----
+### A. `Access denied for user 'root'@'localhost'`
+Penyebab umum:
+- Password yang dipakai tidak sama dengan `MYSQL_ROOT_PASSWORD` saat container pertama kali dibuat.
 
-## 🛡️ 8. Security Checklist
+Solusi:
+- Pakai password yang benar, atau recreate volume MySQL jika memang ingin reset total database.
 
-- [ ] Menggunakan HTTPS (Certbot/SSL) di Nginx.
-- [ ] Firewall (UFW) hanya membuka port 80/443 dan 22 (SSH).
-- [ ] Matikan akses publik port 3306 jika tidak diperlukan.
-- [ ] Ganti password root MySQL di `.env` (Pastikan konsisten dengan data init).
+### B. `ERROR 1046 (3D000): No database selected`
+Penyebab:
+- Nama database tidak dipass di command mysql.
 
----
+Solusi:
+- Pastikan command menyertakan nama DB, contoh:
 
-## 🆘 Troubleshooting
+```bash
+docker exec -i army_qrcode_mysql mysql -uroot -p"Indonesia77" "army_qrcode" < database/init.sql
+```
 
-| Error                     | Solusi                                                                     |
-| :------------------------ | :------------------------------------------------------------------------- |
-| **Access Denied (MySQL)** | Pastikan password `.env` sama dengan password saat DB pertama kali dibuat. |
-| **Unknown column '...'**  | Anda belum menjalankan `init.sql` (Lihat bagian 5).                        |
-| **Port Conflict**         | Ubah `APP_PUBLIC_PORT` di `.env` ke port lain.                             |
+### C. Domain tidak resolve ke app
+Checklist:
+- DNS domain sudah pointing ke server
+- Nginx config `proxy_pass` ke `127.0.0.1:3001`
+- `docker compose ps` menunjukkan `army_qrcode_app` status up
+- Port `3001` tidak diblok firewall internal
 
----
+## 8. Security Notes (Production)
 
-**ArmyQR Team** - © 2026 🇮🇩
+Sebelum go-live:
+- Ganti `MYSQL_ROOT_PASSWORD` dengan password kuat
+- Ganti `SESSION_SECRET` dengan random secret yang kuat
+- Aktifkan HTTPS/TLS di nginx
+- Batasi akses publik ke port MySQL (`3306`) jika tidak diperlukan dari luar server

@@ -1,36 +1,31 @@
 export const validateSocialLink = (platform: string, url: string): boolean => {
-  if (!url) return true; // Empty is fine, but if provided it must match
+  if (!url) return true;
 
-  // Convert to lowercase for easier comparison
   const lowerUrl = url.toLowerCase();
 
   switch (platform) {
     case "Instagram":
-      return lowerUrl.includes("https://instagram");
+      return /^(https?:\/\/)?(www\.)?instagram\.com\//.test(lowerUrl);
     case "Facebook":
-      return lowerUrl.includes("https://facebook");
+      return /^(https?:\/\/)?(www\.)?facebook\.com\//.test(lowerUrl);
     case "Twitter":
-      return (
-        lowerUrl.includes("https://twitter") || lowerUrl.includes("https://x")
-      );
+      return /^(https?:\/\/)?(www\.)?(twitter\.com|x\.com)\//.test(lowerUrl);
     case "LinkedIn":
-      return lowerUrl.includes("https://linkedin");
+      return /^(https?:\/\/)?(www\.)?linkedin\.com\//.test(lowerUrl);
     case "YouTube":
-      return (
-        lowerUrl.includes("https://youtube") ||
-        lowerUrl.includes("https://youtu")
-      );
+      return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//.test(lowerUrl);
     case "TikTok":
-      return lowerUrl.includes("https://tiktok");
+      return /^(https?:\/\/)?(www\.)?tiktok\.com\//.test(lowerUrl);
     case "Pinterest":
-      return lowerUrl.includes("https://pinterest");
+      return /^(https?:\/\/)?(www\.)?pinterest\.com\//.test(lowerUrl);
     case "WhatsApp":
-      return (
-        lowerUrl.includes("https://wa.me") ||
-        lowerUrl.includes("https://whatsapp")
-      );
+      return /^(https?:\/\/)?(www\.)?(wa\.me|whatsapp\.com)\//.test(lowerUrl);
     case "Website":
-      return lowerUrl.startsWith("http://") || lowerUrl.startsWith("https://");
+      return (
+        lowerUrl.startsWith("http://") ||
+        lowerUrl.startsWith("https://") ||
+        lowerUrl.includes(".")
+      );
     default:
       return true;
   }
