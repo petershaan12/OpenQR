@@ -20,5 +20,6 @@ export default [
   ]),
 
   // Public Routes (at the end)
+  route(":id/vcard", "routes/vcard-download.tsx"),
   route(":id", "routes/public-card.tsx"),
 ] satisfies RouteConfig;

@@ -90,42 +90,12 @@ function generateVCard(qr: any, phones: any[]) {
     return vcard;
 }
 
-async function downloadVCard(qr: any, phones: any[]) {
-    const vcard = generateVCard(qr, phones);
-    const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
-    const fileName = `${displayName.replace(/\s+/g, '_')}.vcf`;
-    const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
-
-    // Try to use Web Share API for a more native feel on mobile
-    if (navigator.share && navigator.canShare) {
-        try {
-            const file = new File([blob], fileName, { type: 'text/vcard' });
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: displayName,
-                });
-                return;
-            }
-        } catch (e) {
-            console.error("Share failed", e);
-        }
+function downloadVCard(qr: any) {
+    // Redirecting to a direct URL endpoint often triggers the native "Add Contact"
+    // prompt more reliably on mobile browsers than a Blob download.
+    if (qr.unique_id) {
+        window.location.href = `/${qr.unique_id}/vcard`;
     }
-
-    // Fallback: Traditional download
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    link.setAttribute('target', '_blank');
-    document.body.appendChild(link);
-    link.click();
-
-    // Cleanup
-    setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }, 100);
 }
 
 export default function PublicCard() {
@@ -193,7 +163,7 @@ export default function PublicCard() {
                     {/* Add Contact Button — outlined */}
                     <div className="px-6 mt-5">
                         <button
-                            onClick={() => downloadVCard(qr, phones)}
+                            onClick={() => downloadVCard(qr)}
                             className="inline-flex items-center gap-2 px-6 py-2.5 text-white rounded-full font-bold text-sm border-2 transition-all hover:brightness-110 active:scale-95"
                             style={{ backgroundColor: primaryColor }}
                         >
