@@ -69,7 +69,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     return new Response(vcard, {
         headers: {
             "Content-Type": "text/vcard",
-            "Content-Disposition": `inline; filename="${displayName.replace(/\s+/g, '_')}.vcf"`,
+            "Content-Disposition": `attachment; filename="${displayName.replace(/\s+/g, '_')}.vcf"`,
         },
     });
 }

@@ -29,95 +29,13 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 
 
-function generateVCard(qr: any, phones: any[]) {
-    const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
-    let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
-    vcard += `FN:${displayName}\n`;
-    vcard += `N:${qr.surname || ""};${qr.name || ""};;;\n`;
 
-    if (qr.title) vcard += `TITLE:${qr.title}\n`;
-
-    phones.forEach((p: any) => {
-        if (p.value) vcard += `TEL;TYPE=CELL:${p.value}\n`;
-    });
-
-    if (qr.email) vcard += `EMAIL;TYPE=INTERNET:${qr.email}\n`;
-
-    if (qr.social_network) {
-        try {
-            const social = qr.social_network.startsWith('{') || qr.social_network.startsWith('[')
-                ? JSON.parse(qr.social_network)
-                : { "Website": qr.social_network };
-
-            Object.entries(social).forEach(([key, val]) => {
-                if (val) {
-                    const url = String(val).startsWith('http') ? val : `https://${val}`;
-                    vcard += `URL;TYPE=${key}:${url}\n`;
-                }
-            });
-        } catch (e) {
-            const url = String(qr.social_network).startsWith('http') ? qr.social_network : `https://${qr.social_network}`;
-            vcard += `URL:${url}\n`;
-        }
-    }
-
-    if (qr.profile_image && qr.profile_image.startsWith('data:')) {
-        const parts = qr.profile_image.split(',');
-        const mimeType = parts[0].split(':')[1].split(';')[0];
-        const base64Data = parts[1];
-        if (base64Data) {
-            const type = mimeType.split('/')[1].toUpperCase();
-            vcard += `PHOTO;TYPE=${type};ENCODING=b:${base64Data}\n`;
-        }
-    }
-
-    vcard += `REV:${new Date().toISOString()}\n`;
-    vcard += `END:VCARD`;
-    return vcard;
-}
 
 async function downloadVCard(qr: any, phones: any[]) {
-    const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
-    const fileName = `${displayName.replace(/\s+/g, '_')}.vcf`;
-    const vcard = generateVCard(qr, phones);
-    const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
-
-    // 1. Try Web Share API first (Native share/save prompt)
-    if (navigator.share && navigator.canShare) {
-        try {
-            const file = new File([blob], fileName, { type: 'text/vcard' });
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: displayName,
-                    text: `Contact for ${displayName}`
-                });
-                return;
-            }
-        } catch (e) {
-            console.warn("Native share failed, falling back...");
-        }
-    }
-
-    // 2. Fallback for iOS: Direct link
-    const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isiOS) {
-        window.location.href = `/${qr.unique_id}/vcard`;
-        return;
-    }
-
-    // 3. Last fallback: Traditional download
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-
-    setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }, 200);
+    // Navigating directly to the vcard endpoint triggers the OS native handler
+    // This allows Android/iOS to instantly prompt "Add to Contacts" 
+    // instead of silently saving a .vcf file to the downloads folder.
+    window.location.href = `/${qr.unique_id}/vcard`;
 }
 
 export default function PublicCard() {
