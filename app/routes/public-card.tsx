@@ -35,33 +35,19 @@ function generateVCard(qr: any, phones: any[]) {
     vcard += `FN:${displayName}\n`;
     vcard += `N:${qr.surname || ""};${qr.name || ""};;;\n`;
 
-    if (qr.title) {
-        vcard += `TITLE:${qr.title}\n`;
-    }
-
-    if (qr.organization) {
-        vcard += `ORG:${qr.organization}\n`;
-    }
+    if (qr.title) vcard += `TITLE:${qr.title}\n`;
 
     phones.forEach((p: any) => {
-        if (p.value) {
-            vcard += `TEL;TYPE=CELL:${p.value}\n`;
-        }
+        if (p.value) vcard += `TEL;TYPE=CELL:${p.value}\n`;
     });
 
-    if (qr.email) {
-        vcard += `EMAIL;TYPE=INTERNET:${qr.email}\n`;
-    }
+    if (qr.email) vcard += `EMAIL;TYPE=INTERNET:${qr.email}\n`;
 
-    // Add social links as URLs
     if (qr.social_network) {
         try {
-            let social = {};
-            if (qr.social_network.startsWith('{') || qr.social_network.startsWith('[')) {
-                social = JSON.parse(qr.social_network);
-            } else {
-                social = { "Website": qr.social_network };
-            }
+            const social = qr.social_network.startsWith('{') || qr.social_network.startsWith('[')
+                ? JSON.parse(qr.social_network)
+                : { "Website": qr.social_network };
 
             Object.entries(social).forEach(([key, val]) => {
                 if (val) {
@@ -90,12 +76,48 @@ function generateVCard(qr: any, phones: any[]) {
     return vcard;
 }
 
-function downloadVCard(qr: any) {
-    // Redirecting to a direct URL endpoint often triggers the native "Add Contact"
-    // prompt more reliably on mobile browsers than a Blob download.
-    if (qr.unique_id) {
-        window.location.href = `/${qr.unique_id}/vcard`;
+async function downloadVCard(qr: any, phones: any[]) {
+    const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
+    const fileName = `${displayName.replace(/\s+/g, '_')}.vcf`;
+    const vcard = generateVCard(qr, phones);
+    const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
+
+    // 1. Try Web Share API first (Native share/save prompt)
+    if (navigator.share && navigator.canShare) {
+        try {
+            const file = new File([blob], fileName, { type: 'text/vcard' });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: displayName,
+                    text: `Contact for ${displayName}`
+                });
+                return;
+            }
+        } catch (e) {
+            console.warn("Native share failed, falling back...");
+        }
     }
+
+    // 2. Fallback for iOS: Direct link
+    const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isiOS) {
+        window.location.href = `/${qr.unique_id}/vcard`;
+        return;
+    }
+
+    // 3. Last fallback: Traditional download
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 200);
 }
 
 export default function PublicCard() {
@@ -163,7 +185,7 @@ export default function PublicCard() {
                     {/* Add Contact Button — outlined */}
                     <div className="px-6 mt-5">
                         <button
-                            onClick={() => downloadVCard(qr)}
+                            onClick={() => downloadVCard(qr, phones)}
                             className="inline-flex items-center gap-2 px-6 py-2.5 text-white rounded-full font-bold text-sm border-2 transition-all hover:brightness-110 active:scale-95"
                             style={{ backgroundColor: primaryColor }}
                         >

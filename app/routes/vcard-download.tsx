@@ -1,10 +1,11 @@
+import type { LoaderFunctionArgs } from "react-router";
 import { getQRCodeByUniqueId } from "~/services";
-import type { Route } from "./+types/vcard-download";
 
-export async function loader({ params }: Route.LoaderArgs) {
-    if (!params.id) throw new Response("Not Found", { status: 404 });
+export async function loader({ params }: LoaderFunctionArgs) {
+    const { id } = params;
+    if (!id) throw new Response("Not Found", { status: 404 });
 
-    const data = await getQRCodeByUniqueId(params.id);
+    const data = await getQRCodeByUniqueId(id);
 
     if (!data || data.qr.status !== "published") {
         throw new Response("Not Found", { status: 404 });
@@ -19,10 +20,6 @@ export async function loader({ params }: Route.LoaderArgs) {
 
     if (qr.title) {
         vcard += `TITLE:${qr.title}\n`;
-    }
-
-    if (qr.organization) {
-        vcard += `ORG:${qr.organization}\n`;
     }
 
     phones.forEach((p: any) => {
@@ -71,7 +68,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 
     return new Response(vcard, {
         headers: {
-            "Content-Type": "text/vcard; charset=utf-8",
+            "Content-Type": "text/vcard",
             "Content-Disposition": `inline; filename="${displayName.replace(/\s+/g, '_')}.vcf"`,
         },
     });
