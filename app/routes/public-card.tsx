@@ -9,22 +9,48 @@ import {
     QrCode as QrCodeIcon,
 } from "lucide-react";
 import { socialOptions } from "~/components/shared/SocialIcons";
-import { getQRCodeByUniqueId, incrementScans } from "~/services";
 import type { Route } from "./+types/public-card";
 import WelcomeScreen from "~/components/WelcomeScreen";
 
 export async function loader({ params }: Route.LoaderArgs) {
     if (!params.id) throw new Response("Not Found", { status: 404 });
 
-    const data = await getQRCodeByUniqueId(params.id);
+    try {
+        const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+        
+        const response = await fetch(`${API_URL}?path=/qrcodes/public/${params.id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Response("Not Found", { status: 404 });
+            }
+            throw new Error("Failed to load QR code data");
+        }
+        
+        const data = await response.json();
 
-    if (!data || data.qr.status !== "published") {
-        throw new Response("Not Found", { status: 404 });
+        if (!data || data.qr.status !== "published") {
+            throw new Response("Not Found", { status: 404 });
+        }
+
+        // Increment scan count
+        await fetch(`${API_URL}?path=/qrcodes/${params.id}/increment`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        return data;
+    } catch (error) {
+        console.error("Error loading public card data:", error);
+        throw new Response("Not Found", { status: 500 });
     }
-
-    await incrementScans(params.id);
-
-    return data;
 }
 
 

@@ -1,19 +1,51 @@
 import { useState } from "react";
-import { useLoaderData, Form, useNavigate, useActionData } from "react-router";
+import { useLoaderData, Form, useNavigate, useActionData, redirect } from "react-router";
 import { User, Mail, Shield, Check, AlertCircle, Save, Lock, Camera, Plus, Trash2, Upload, X } from "lucide-react";
-import { requireUser } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
-import { getUserById, updateUser, createNotification, getUserNotifications } from "~/services";
 
 export async function loader({ request }: { request: Request }) {
-    const userId = await requireUser(request);
-    const user = await getUserById(userId);
-    const notifications = await getUserNotifications(userId);
-    return { user, notifications };
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return redirect("/login");
+    }
+
+    try {
+        // Get user data from PHP backend
+        const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+        
+        const userResponse = await fetch(`${API_URL}?path=/auth/me`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        });
+        
+        if (!userResponse.ok) {
+            localStorage.removeItem('token');
+            return redirect("/login");
+        }
+        
+        const user = await userResponse.json();
+
+        // Get notifications from PHP backend (if available)
+        // Note: You may need to implement this in your PHP backend
+        const notifications = []; // Placeholder - implement as needed
+
+        return { user, notifications };
+    } catch (error) {
+        console.error("Error loading account data:", error);
+        return redirect("/login");
+    }
 }
 
 export async function action({ request }: { request: Request }) {
-    const userId = await requireUser(request);
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return redirect("/login");
+    }
+
     const formData = await request.formData();
     const _action = formData.get("_action");
 
@@ -22,14 +54,31 @@ export async function action({ request }: { request: Request }) {
         const email = formData.get("email") as string;
         const avatar = formData.get("avatar") as string;
 
-        await updateUser(userId, { name, email, avatar: avatar || null });
-        await createNotification({
-            user_id: userId,
-            title: "Profile Updated",
-            message: "Your profile information has been updated successfully.",
-            type: "success"
-        });
-        return { success: true, message: "Profile updated successfully" };
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+            
+            const response = await fetch(`${API_URL}?path=/users/me`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    avatar: avatar || null
+                }),
+            });
+            
+            if (!response.ok) {
+                throw new Error("Failed to update profile");
+            }
+            
+            return { success: true, message: "Profile updated successfully" };
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            return { error: "Failed to update profile" };
+        }
     }
 
     if (_action === "update_password") {
@@ -38,14 +87,29 @@ export async function action({ request }: { request: Request }) {
         const confirmPassword = formData.get("confirm_password") as string;
 
         if (newPassword && newPassword === confirmPassword) {
-            await updateUser(userId, { password: newPassword });
-            await createNotification({
-                user_id: userId,
-                title: "Password Changed",
-                message: "Your account password has been changed successfully.",
-                type: "success"
-            });
-            return { success: true, message: "Password updated successfully" };
+            try {
+                const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+                
+                const response = await fetch(`${API_URL}?path=/users/me/password`, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        password: newPassword
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error("Failed to update password");
+                }
+                
+                return { success: true, message: "Password updated successfully" };
+            } catch (error) {
+                console.error("Error updating password:", error);
+                return { error: "Failed to update password" };
+            }
         }
         return { error: "Passwords do not match" };
     }

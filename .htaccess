@@ -1,0 +1,38 @@
+RewriteEngine On
+
+# Security: Prevent access to sensitive files
+RewriteRule ^composer\.json$ - [F,L]
+RewriteRule ^composer\.lock$ - [F,L]
+RewriteRule ^Dockerfile$ - [F,L]
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^package\.json$ - [F,L]
+RewriteRule ^package-lock\.json$ - [F,L]
+RewriteRule ^tsconfig\.json$ - [F,L]
+RewriteRule ^vite\.config\.ts$ - [F,L]
+RewriteRule ^react-router\.config\.ts$ - [F,L]
+RewriteRule ^eslint\.config\.js$ - [F,L]
+RewriteRule ^postcss\.config\.js$ - [F,L]
+
+# Block access to sensitive directories
+RewriteRule ^app/ - [F,L]
+RewriteRule ^database/ - [F,L]
+RewriteRule ^php-backend/config/ - [F,L]
+
+# Serve static assets directly (CSS, JS, images, fonts)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Handle API requests to PHP backend
+RewriteRule ^api/(.*)$ php-backend/api.php?path=$1 [QSA,L]
+
+# For React Router client-side routing, serve index.html for all other non-file requests
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [QSA,L]
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

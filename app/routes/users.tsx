@@ -1,28 +1,87 @@
 import { useState, useMemo, useRef } from "react";
 import { useLoaderData, Form, Link, redirect } from "react-router";
 import { Search, Plus, Trash2, Edit, Edit2, User, Shield, ChevronDown, X, Mail, Key, Check, Save } from "lucide-react";
-import { requireUser } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
 import UserModal from "~/components/UserModal";
 import SearchFilter from "~/components/SearchFilter";
-import { getAllUsers, getUserById, deleteUser, createUser, updateUser, getUserNotifications, createNotification } from "~/services";
 
 export async function loader({ request }: { request: Request }) {
-    const userId = await requireUser(request);
-    const currentUser = await getUserById(userId);
-
-    if (currentUser?.role !== "admin") {
-        return redirect("/dashboard");
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return redirect("/login");
     }
 
-    const users = await getAllUsers();
-    const notifications = await getUserNotifications(userId);
-    return { user: currentUser, users, notifications };
+    try {
+        // Get user data from PHP backend
+        const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+        
+        const userResponse = await fetch(`${API_URL}?path=/auth/me`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        });
+        
+        if (!userResponse.ok) {
+            localStorage.removeItem('token');
+            return redirect("/login");
+        }
+        
+        const currentUser = await userResponse.json();
+
+        if (currentUser?.role !== "admin") {
+            return redirect("/dashboard");
+        }
+
+        // Get all users from PHP backend
+        const usersResponse = await fetch(`${API_URL}?path=/users`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        });
+        
+        if (!usersResponse.ok) {
+            throw new Error("Failed to load users");
+        }
+        
+        const users = await usersResponse.json();
+
+        // Get notifications from PHP backend (if available)
+        // Note: You may need to implement this in your PHP backend
+        const notifications = []; // Placeholder - implement as needed
+
+        return { user: currentUser, users, notifications };
+    } catch (error) {
+        console.error("Error loading users data:", error);
+        return redirect("/login");
+    }
 }
 
 export async function action({ request }: { request: Request }) {
-    const userId = await requireUser(request);
-    const currentUser = await getUserById(userId);
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return redirect("/login");
+    }
+
+    // Check if current user is admin
+    const userResponse = await fetch('/php-backend/api.php?path=/auth/me', {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+    
+    if (!userResponse.ok) {
+        localStorage.removeItem('token');
+        return redirect("/login");
+    }
+    
+    const currentUser = await userResponse.json();
 
     if (currentUser?.role !== "admin") {
         return redirect("/dashboard");
@@ -33,8 +92,27 @@ export async function action({ request }: { request: Request }) {
 
     if (_action === "delete") {
         const id = formData.get("id") as string;
-        await deleteUser(parseInt(id));
-        return { success: true };
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+            
+            const response = await fetch(`${API_URL}?path=/users/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            
+            if (!response.ok) {
+                throw new Error("Failed to delete user");
+            }
+            
+            return { success: true };
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            return { error: "Failed to delete user" };
+        }
     }
 
     if (_action === "create") {
@@ -43,14 +121,32 @@ export async function action({ request }: { request: Request }) {
         const role = formData.get("role") as string;
         const password = formData.get("password") as string;
 
-        await createUser({ name, email, role, password });
-        await createNotification({
-            user_id: userId,
-            title: "User Created",
-            message: `New user "${name}" has been added to the system.`,
-            type: "success"
-        });
-        return { success: true };
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+            
+            const response = await fetch(`${API_URL}?path=/users`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    role,
+                    password
+                }),
+            });
+            
+            if (!response.ok) {
+                throw new Error("Failed to create user");
+            }
+            
+            return { success: true };
+        } catch (error) {
+            console.error("Error creating user:", error);
+            return { error: "Failed to create user" };
+        }
     }
 
     if (_action === "update") {
@@ -63,14 +159,27 @@ export async function action({ request }: { request: Request }) {
         const updateData: any = { name, email, role };
         if (password) updateData.password = password;
 
-        await updateUser(parseInt(id), updateData);
-        await createNotification({
-            user_id: userId,
-            title: "User Updated",
-            message: `User information for "${name}" has been modified.`,
-            type: "info"
-        });
-        return { success: true };
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+            
+            const response = await fetch(`${API_URL}?path=/users/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(updateData),
+            });
+            
+            if (!response.ok) {
+                throw new Error("Failed to update user");
+            }
+            
+            return { success: true };
+        } catch (error) {
+            console.error("Error updating user:", error);
+            return { error: "Failed to update user" };
+        }
     }
 
     return null;

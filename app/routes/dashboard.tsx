@@ -1,4 +1,4 @@
-import { useLoaderData, Form, Link } from "react-router";
+import { useLoaderData, Form, Link, redirect } from "react-router";
 import {
   Search,
   Plus,
@@ -13,40 +13,103 @@ import {
   ExternalLink,
   Check,
 } from "lucide-react";
-import { requireUser } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
-import { getUserQRCodes, deleteQRCode, getUserById, getUserNotifications, markAllNotificationsAsRead } from "~/services";
 import type { Route } from "./+types/dashboard";
 import { useState, useMemo, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import SearchFilter from "~/components/SearchFilter";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const userId = await requireUser(request);
-  const user = await getUserById(userId);
-  const qrcodes = await getUserQRCodes(userId);
-  const notifications = await getUserNotifications(userId);
+  // Check if user is authenticated
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return redirect("/login");
+  }
 
-  const url = new URL(request.url);
-  const origin = url.origin;
-  const host = url.host;
+  try {
+    // Get user data from PHP backend
+    const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+    
+    const userResponse = await fetch(`${API_URL}?path=/auth/me`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (!userResponse.ok) {
+      localStorage.removeItem('token');
+      return redirect("/login");
+    }
+    
+    const user = await userResponse.json();
 
-  return { user, qrcodes, notifications, origin, host };
+    // Get QR codes from PHP backend
+    const qrcodesResponse = await fetch(`${API_URL}?path=/qrcodes`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (!qrcodesResponse.ok) {
+      throw new Error("Failed to load QR codes");
+    }
+    
+    const qrcodes = await qrcodesResponse.json();
+
+    // Get notifications from PHP backend (if available)
+    // Note: You may need to implement this in your PHP backend
+    const notifications = []; // Placeholder - implement as needed
+
+    const url = new URL(request.url);
+    const origin = url.origin;
+    const host = url.host;
+
+    return { user, qrcodes, notifications, origin, host };
+  } catch (error) {
+    console.error("Error loading dashboard data:", error);
+    return redirect("/login");
+  }
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const userId = await requireUser(request);
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return redirect("/login");
+  }
+
   const formData = await request.formData();
   const id = formData.get("id");
   const _action = formData.get("_action");
 
   if (_action === "delete" && id) {
-    await deleteQRCode(parseInt(id as string), userId);
-    return { success: true };
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+      
+      const response = await fetch(`${API_URL}?path=/qrcodes/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete QR code");
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting QR code:", error);
+      return { success: false, error: "Failed to delete QR code" };
+    }
   }
 
   if (_action === "mark_read") {
-    await markAllNotificationsAsRead(userId);
+    // Implement mark notifications as read if needed
     return { success: true };
   }
 

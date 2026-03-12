@@ -1,21 +1,67 @@
 import { useState, useRef } from "react";
-import { useLoaderData, Form, useSearchParams, useNavigation } from "react-router";
+import { useLoaderData, Form, useSearchParams, useNavigation, redirect } from "react-router";
 import { Plus, Trash2, Edit2, X, Check, Palette, Type, Save, AlertCircle, Loader2 } from "lucide-react";
-import { requireUser } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
 import ThemeModal from "~/components/ThemeModal";
-import { getUserThemes, getUserById, createTheme, deleteTheme, updateTheme, getUserNotifications, createNotification } from "~/services";
 
 export async function loader({ request }: { request: Request }) {
-  const userId = await requireUser(request);
-  const user = await getUserById(userId);
-  const themes = await getUserThemes(userId);
-  const notifications = await getUserNotifications(userId);
-  return { user, themes, notifications };
+  // Check if user is authenticated
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return redirect("/login");
+  }
+
+  try {
+    // Get user data from PHP backend
+    const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+    
+    const userResponse = await fetch(`${API_URL}?path=/auth/me`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (!userResponse.ok) {
+      localStorage.removeItem('token');
+      return redirect("/login");
+    }
+    
+    const user = await userResponse.json();
+
+    // Get themes from PHP backend
+    const themesResponse = await fetch(`${API_URL}?path=/themes`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (!themesResponse.ok) {
+      throw new Error("Failed to load themes");
+    }
+    
+    const themes = await themesResponse.json();
+
+    // Get notifications from PHP backend (if available)
+    // Note: You may need to implement this in your PHP backend
+    const notifications = []; // Placeholder - implement as needed
+
+    return { user, themes, notifications };
+  } catch (error) {
+    console.error("Error loading theme data:", error);
+    return redirect("/login");
+  }
 }
 
 export async function action({ request }: { request: Request }) {
-  const userId = await requireUser(request);
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return redirect("/login");
+  }
+
   const formData = await request.formData();
   const _action = formData.get("_action");
 
@@ -28,14 +74,35 @@ export async function action({ request }: { request: Request }) {
     const welcome_video = formData.get("welcome_video") as string;
     const enable_welcome = formData.get("enable_welcome") === "on";
 
-    await createTheme({ name, primary_color, legal_info, welcome_screen_time, welcome_image, welcome_video, enable_welcome, user_id: userId });
-    await createNotification({
-      user_id: userId,
-      title: "Theme Created",
-      message: `New theme "${name}" has been created.`,
-      type: "success"
-    });
-    return { success: true };
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+      
+      const response = await fetch(`${API_URL}?path=/themes`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          primary_color,
+          legal_info,
+          welcome_screen_time,
+          welcome_image,
+          welcome_video,
+          enable_welcome
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to create theme");
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error creating theme:", error);
+      return { error: "Failed to create theme" };
+    }
   }
 
   if (_action === "update") {
@@ -48,20 +115,60 @@ export async function action({ request }: { request: Request }) {
     const welcome_video = formData.get("welcome_video") as string;
     const enable_welcome = formData.get("enable_welcome") === "on";
 
-    await updateTheme(parseInt(id), userId, { name, primary_color, legal_info, welcome_screen_time, welcome_image, welcome_video, enable_welcome });
-    await createNotification({
-      user_id: userId,
-      title: "Theme Updated",
-      message: `Theme "${name}" has been updated.`,
-      type: "info"
-    });
-    return { success: true };
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+      
+      const response = await fetch(`${API_URL}?path=/themes/${id}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          primary_color,
+          legal_info,
+          welcome_screen_time,
+          welcome_image,
+          welcome_video,
+          enable_welcome
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update theme");
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating theme:", error);
+      return { error: "Failed to update theme" };
+    }
   }
 
   if (_action === "delete") {
     const id = formData.get("id") as string;
-    await deleteTheme(parseInt(id), userId);
-    return { success: true };
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+      
+      const response = await fetch(`${API_URL}?path=/themes/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete theme");
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting theme:", error);
+      return { error: "Failed to delete theme" };
+    }
   }
 
   return null;

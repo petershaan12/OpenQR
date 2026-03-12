@@ -1,57 +1,63 @@
-import { Form, useActionData, useNavigation, redirect } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { Mail, Lock, LogIn, QrCode, AlertCircle, Loader2 } from "lucide-react";
-import bcrypt from "bcryptjs";
-import { findUserByEmail } from "~/services";
-import { getUserFromCookie, createSessionCookie, clearSessionCookie } from "~/.server/auth";
-
-interface ActionData {
-  error?: string;
-}
-
-export async function loader({ request }: { request: Request }) {
-  const userId = getUserFromCookie(request);
-  if (userId) {
-    return redirect("/dashboard");
-  }
-  return null;
-}
-
-export async function action({ request }: { request: Request }) {
-  const formData = await request.formData();
-  const action = formData.get("_action");
-
-  if (action === "logout") {
-    return new Response(null, {
-      status: 302,
-      headers: {
-        "Set-Cookie": clearSessionCookie(),
-        Location: "/login",
-      },
-    });
-  }
-
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  const user = await findUserByEmail(email);
-
-  if (!user || !bcrypt.compareSync(password, user.password)) {
-    return { error: "Invalid email or password" };
-  }
-
-  return new Response(null, {
-    status: 302,
-    headers: {
-      "Set-Cookie": createSessionCookie(user.id),
-      Location: "/dashboard",
-    },
-  });
-}
 
 export default function Login() {
-  const actionData = useActionData<ActionData>();
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // If we have a user in localStorage, we can redirect or check session
+    const user = localStorage.getItem("user");
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      // Point this to your PHP Backend URL
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+
+      const response = await fetch(`${API_URL}?path=/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        throw new Error("Invalid response from server");
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || "Invalid email or password");
+      }
+
+      // Save user to localStorage
+      localStorage.setItem("user", JSON.stringify(data.user));
+      
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to login. Check your connection.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-base-200 p-4">
@@ -69,14 +75,14 @@ export default function Login() {
             </p>
           </div>
 
-          {actionData?.error && (
+          {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-2 border border-red-100">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              {actionData.error}
+              {error}
             </div>
           )}
 
-          <Form method="post" className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="text-sm font-medium text-base-content/70 mb-1.5 block">
                 Email Address
@@ -127,7 +133,7 @@ export default function Login() {
               )}
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
-          </Form>
+          </form>
         </div>
       </div>
     </div>
