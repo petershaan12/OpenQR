@@ -23,6 +23,7 @@ export default function WelcomeScreen({ qr, showSplash, primaryColor, displayNam
                             src={qr.welcome_video}
                             autoPlay
                             playsInline
+                            muted
                             onEnded={onVideoEnd}
                             className="w-full h-full object-cover"
                         />
