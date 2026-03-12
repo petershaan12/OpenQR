@@ -1,8 +1,8 @@
 <?php
 // controllers/QRCodeController.php
-require_once '../services/QRCodeService.php';
-require_once '../config/session.php';
-require_once '../helpers/response.php';
+require_once dirname(__DIR__) . '/services/QRCodeService.php';
+require_once dirname(__DIR__) . '/config/session.php';
+require_once dirname(__DIR__) . '/helpers/response.php';
 
 class QRCodeController {
     private $qrCodeService;
@@ -111,6 +111,30 @@ class QRCodeController {
         $this->qrCodeService->incrementScans($uniqueId);
 
         sendJsonResponse($result);
+    }
+    
+    public function downloadVCard($uniqueId) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            sendErrorResponse('Method not allowed', 405);
+        }
+
+        $vcard = $this->qrCodeService->generateVCard($uniqueId);
+
+        if (!$vcard) {
+            sendErrorResponse('QR Code not found', 404);
+        }
+
+        // Set headers for vCard download
+        header('Content-Type: text/vcard; charset=utf-8');
+        header('Content-Disposition: attachment; filename="contact.vcf"');
+        header('Content-Length: ' . strlen($vcard));
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('Expires: 0');
+        header('Pragma: public');
+
+        // Output the vCard content
+        echo $vcard;
+        exit;
     }
 }
 ?>

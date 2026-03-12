@@ -1,14 +1,57 @@
-import { Form } from "react-router";
-import { User, Mail, Key, Check, Save, X, Edit, Plus } from "lucide-react";
-import { RefObject } from "react";
+import { User, Mail, Key, Check, Save, X, Edit, Plus, Loader2 } from "lucide-react";
+import { RefObject, useState } from "react";
 
 export default function UserModal({
     modalRef,
-    editingUser
+    editingUser,
+    onSave
 }: {
     modalRef: RefObject<HTMLDialogElement | null>;
     editingUser?: any;
+    onSave?: () => void;
 }) {
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSubmitting(true);
+
+        const formData = new FormData(e.currentTarget);
+        const data = {
+            id: editingUser?.id,
+            name: formData.get('name') as string,
+            email: formData.get('email') as string,
+            password: formData.get('password') as string,
+            role: formData.get('role') as string,
+        };
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+            const token = localStorage.getItem('token');
+
+            const response = await fetch(`${API_URL}?path=/users${editingUser ? `/${editingUser.id}` : ''}`, {
+                method: editingUser ? "PUT" : "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save user");
+            }
+
+            modalRef.current?.close();
+            onSave?.();
+        } catch (error) {
+            console.error("Error saving user:", error);
+            alert("Failed to save user");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
             <div className="modal-box p-0 overflow-hidden border border-base-300 shadow-2xl rounded-lg bg-base-100">
@@ -22,7 +65,7 @@ export default function UserModal({
                     </form>
                 </div>
 
-                <Form key={editingUser?.id || "new"} method="post" onSubmit={() => modalRef.current?.close()} className="px-6 py-6 space-y-4">
+                <form key={editingUser?.id || "new"} onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
                     {editingUser && <input type="hidden" name="id" value={editingUser.id} />}
 
                     <div className="form-control">
@@ -69,12 +112,16 @@ export default function UserModal({
                         <form method="dialog">
                             <button className="btn btn-ghost font-bold">Cancel</button>
                         </form>
-                        <button type="submit" name="_action" value={editingUser ? "update" : "create"} className="btn-army px-6 gap-2">
-                            {editingUser ? <Save className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                            {editingUser ? "Save Changes" : "Create User"}
+                        <button type="submit" disabled={submitting} className="btn-army px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                            {submitting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                editingUser ? <Save className="w-4 h-4" /> : <Check className="w-4 h-4" />
+                            )}
+                            {submitting ? "Saving..." : (editingUser ? "Save Changes" : "Create User")}
                         </button>
                     </div>
-                </Form>
+                </form>
             </div>
             <form method="dialog" className="modal-backdrop bg-base-content/20 backdrop-blur-[2px]">
                 <button>close</button>

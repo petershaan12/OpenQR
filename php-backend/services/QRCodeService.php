@@ -1,6 +1,6 @@
 <?php
 // services/QRCodeService.php
-require_once '../config/database.php';
+require_once dirname(__DIR__) . '/config/database.php';
 
 class QRCodeService {
     private $db;
@@ -238,13 +238,66 @@ class QRCodeService {
 
     private function isUniqueIdExists($uniqueId) {
         $stmt = $this->db->prepare("
-            SELECT COUNT(*) as count 
-            FROM qrcodes 
+            SELECT COUNT(*) as count
+            FROM qrcodes
             WHERE unique_id = ?
         ");
         $stmt->execute([$uniqueId]);
         $result = $stmt->fetch();
         return $result['count'] > 0;
+    }
+    
+    public function generateVCard($uniqueId) {
+        // Get QR code data
+        $qrCodeData = $this->getQRCodeByUniqueId($uniqueId);
+        
+        if (!$qrCodeData) {
+            return null;
+        }
+        
+        $qr = $qrCodeData['qr'];
+        $phones = $qrCodeData['phones'];
+        
+        // Start building vCard content
+        $vcard = "BEGIN:VCARD\n";
+        $vcard .= "VERSION:3.0\n";
+        $vcard .= "FN:" . $this->escapeVCardValue($qr['name'] . ' ' . $qr['surname']) . "\n";
+        $vcard .= "N:" . $this->escapeVCardValue($qr['surname']) . ";" . $this->escapeVCardValue($qr['name']) . ";;;\n";
+        
+        if (!empty($qr['title'])) {
+            $vcard .= "TITLE:" . $this->escapeVCardValue($qr['title']) . "\n";
+        }
+        
+        if (!empty($qr['email'])) {
+            $vcard .= "EMAIL:" . $this->escapeVCardValue($qr['email']) . "\n";
+        }
+        
+        // Add phone numbers
+        foreach ($phones as $phone) {
+            $vcard .= "TEL:" . $this->escapeVCardValue($phone['value']) . "\n";
+        }
+        
+        // Add website if present in social networks
+        $socialNetworks = json_decode($qr['social_network'], true);
+        if ($socialNetworks && isset($socialNetworks['Website'])) {
+            $vcard .= "URL:" . $this->escapeVCardValue($socialNetworks['Website']) . "\n";
+        }
+        
+        $vcard .= "END:VCARD";
+        
+        // Increment scan count
+        $this->incrementScans($uniqueId);
+        
+        return $vcard;
+    }
+    
+    private function escapeVCardValue($value) {
+        // Escape special characters for vCard format
+        return str_replace(
+            ['\\', ',', ';', "\n"],
+            ['\\\\', '\\,', '\\;', '\\n'],
+            $value
+        );
     }
 }
 ?>

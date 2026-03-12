@@ -1,4 +1,4 @@
-import { Link, useLocation, Form } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
     QrCode,
     Plus,
@@ -18,10 +18,17 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ user }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const darkMode = useUIStore((state) => state.darkMode);
     const toggleDarkMode = useUIStore((state) => state.toggleDarkMode);
     const sidebarOpen = useUIStore((state) => state.sidebarOpen);
     const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
 
     const isActive = (path: string) => location.pathname === path;
 
@@ -99,12 +106,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                         <span>Hide Sidebar</span>
                     </button>
 
-                    <Form action="/login" method="post" className="w-full">
-                        <button type="submit" name="_action" value="logout" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/60 hover:bg-red-600/10 hover:text-red-600 w-full transition-all">
-                            <LogOut className="w-4 h-4" />
-                            <span>Logout</span>
-                        </button>
-                    </Form>
+                    <button type="button" onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/60 hover:bg-red-600/10 hover:text-red-600 w-full transition-all">
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                    </button>
                 </div>
             </aside>
         </>

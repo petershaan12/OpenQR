@@ -22,11 +22,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $requestUri = $_SERVER['REQUEST_URI'];
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Remove query parameters
-$path = parse_url($requestUri, PHP_URL_PATH);
-// Remove the base path (assuming it's /api/)
-$basePath = '/api'; // Adjust this if your API is hosted elsewhere
-$path = str_replace($basePath, '', $path);
+// Check if path is provided as a query parameter (for direct access to php-backend/api.php)
+$path = '';
+if (isset($_GET['path'])) {
+    $path = $_GET['path'];
+} else {
+    // Remove query parameters from URI
+    $path = parse_url($requestUri, PHP_URL_PATH);
+    // Remove the base path (assuming it's /api/)
+    $basePath = '/api'; // Adjust this if your API is hosted elsewhere
+    $path = str_replace($basePath, '', $path);
+}
 
 // Define routes
 $routes = [
@@ -115,12 +121,16 @@ $routes = [
         $controller = new QRCodeController();
         $controller->publicView($uniqueId);
     },
+    'GET:/qrcodes/{uniqueId}/vcard' => function($uniqueId) {
+        $controller = new QRCodeController();
+        $controller->downloadVCard($uniqueId);
+    },
     'POST:/qrcodes/{uniqueId}/increment' => function($uniqueId) {
         // This endpoint increments scan count without requiring auth
         $qrCodeService = new QRCodeService();
-        
+
         $result = $qrCodeService->incrementScansByUniqueId($uniqueId);
-        
+
         if ($result) {
             sendJsonResponse(['success' => true, 'message' => 'Scan count incremented']);
         } else {
@@ -163,7 +173,7 @@ foreach ($routes as $route => $handler) {
     // Convert route pattern to regex, capturing parameters
     $regexPattern = preg_quote($routePattern, '/');
     $regexPattern = str_replace('\{id\}', '(\d+)', $regexPattern);
-    $regexPattern = str_replace('\{uniqueId\}', '([a-zA-Z0-9]+)', $regexPattern);
+    $regexPattern = str_replace('\{uniqueId\}', '([a-zA-Z0-9_-]+)', $regexPattern);
     
     if (preg_match('#^' . $regexPattern . '$#', $path, $matches)) {
         array_shift($matches); // Remove full match
@@ -177,6 +187,6 @@ foreach ($routes as $route => $handler) {
 
 // If no route matched
 if (!$routeFound) {
-    sendErrorResponse('Route not found', 404);
+    sendErrorResponse('Route not found: ' . $method . ' ' . $path, 404);
 }
 ?>

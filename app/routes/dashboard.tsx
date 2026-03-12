@@ -1,134 +1,34 @@
-import { useLoaderData, Form, Link, redirect } from "react-router";
+import { Link, Navigate } from "react-router-dom";
 import {
-  Search,
-  Plus,
   Trash2,
   Edit2,
-  Share2,
   QrCode as QrCodeIcon,
   Copy,
   Download,
-  MoreVertical,
-  ChevronDown,
   ExternalLink,
   Check,
 } from "lucide-react";
 import DashboardLayout from "~/components/DashboardLayout";
-import type { Route } from "./+types/dashboard";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import SearchFilter from "~/components/SearchFilter";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  // Check if user is authenticated
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return redirect("/login");
-  }
-
-  try {
-    // Get user data from PHP backend
-    const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-    
-    const userResponse = await fetch(`${API_URL}?path=/auth/me`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    
-    if (!userResponse.ok) {
-      localStorage.removeItem('token');
-      return redirect("/login");
-    }
-    
-    const user = await userResponse.json();
-
-    // Get QR codes from PHP backend
-    const qrcodesResponse = await fetch(`${API_URL}?path=/qrcodes`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    
-    if (!qrcodesResponse.ok) {
-      throw new Error("Failed to load QR codes");
-    }
-    
-    const qrcodes = await qrcodesResponse.json();
-
-    // Get notifications from PHP backend (if available)
-    // Note: You may need to implement this in your PHP backend
-    const notifications = []; // Placeholder - implement as needed
-
-    const url = new URL(request.url);
-    const origin = url.origin;
-    const host = url.host;
-
-    return { user, qrcodes, notifications, origin, host };
-  } catch (error) {
-    console.error("Error loading dashboard data:", error);
-    return redirect("/login");
-  }
-}
-
-export async function action({ request }: Route.ActionArgs) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return redirect("/login");
-  }
-
-  const formData = await request.formData();
-  const id = formData.get("id");
-  const _action = formData.get("_action");
-
-  if (_action === "delete" && id) {
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-      
-      const response = await fetch(`${API_URL}?path=/qrcodes/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to delete QR code");
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Error deleting QR code:", error);
-      return { success: false, error: "Failed to delete QR code" };
-    }
-  }
-
-  if (_action === "mark_read") {
-    // Implement mark notifications as read if needed
-    return { success: true };
-  }
-
-  return null;
-}
-
 export default function Dashboard() {
-  const { user, qrcodes, notifications, origin, host } = useLoaderData<typeof loader>();
+  // Get cached user immediately for fast render
+  const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+
+  const [user, setUser] = useState<any>(cachedUser);
+  const [qrcodes, setQrcodes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showToast, setShowToast] = useState(false);
 
-  useEffect(() => {
-    if (showToast) {
-      const timer = setTimeout(() => setShowToast(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showToast]);
+  const notifications: any[] = [];
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const host = typeof window !== 'undefined' ? window.location.host : '';
 
   const filteredQRCodes = useMemo(() =>
     qrcodes.filter((qr: any) => {
@@ -143,27 +43,29 @@ export default function Dashboard() {
     [qrcodes, searchTerm, activeFilter]
   );
 
-  const allSelected = selectedIds.length === filteredQRCodes.length && filteredQRCodes.length > 0;
-  const toggleSelectAll = () => setSelectedIds(allSelected ? [] : filteredQRCodes.map((qr: any) => qr.id));
-  const toggleSelect = (id: number) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const allSelected = filteredQRCodes.length > 0 && selectedIds.length === filteredQRCodes.length;
 
-  const copyLink = (uniqueId: string) => {
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds(allSelected ? [] : filteredQRCodes.map((qr: any) => qr.id));
+  }, [allSelected, filteredQRCodes]);
+
+  const toggleSelect = useCallback((id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  }, []);
+
+  const copyLink = useCallback((uniqueId: string) => {
     const text = `${origin}/${uniqueId}`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
         setShowToast(true);
       }).catch(() => {
-        // Fallback
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        setShowToast(true);
+        fallbackCopy(text);
       });
     } else {
-      // Fallback
+      fallbackCopy(text);
+    }
+
+    function fallbackCopy(text: string) {
       const textArea = document.createElement("textarea");
       textArea.value = text;
       document.body.appendChild(textArea);
@@ -176,9 +78,9 @@ export default function Dashboard() {
       }
       document.body.removeChild(textArea);
     }
-  };
+  }, [origin]);
 
-  const downloadQRCode = (uniqueId: string, name: string) => {
+  const downloadQRCode = useCallback((uniqueId: string, name: string) => {
     const svg = document.getElementById(`qr-${uniqueId}`);
     if (!svg) return;
     const svgData = new XMLSerializer().serializeToString(svg);
@@ -200,16 +102,108 @@ export default function Dashboard() {
       }
     };
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-  };
+  }, []);
+
+  const handleDelete = useCallback(async (id: number) => {
+    if (!confirm("Delete this QR code?")) {
+      return;
+    }
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+
+      const response = await fetch(`${API_URL}?path=/qrcodes/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete QR code");
+      }
+
+      setQrcodes(prev => prev.filter((qr: any) => qr.id !== id));
+    } catch (error) {
+      console.error("Error deleting QR code:", error);
+      alert("Failed to delete QR code");
+    }
+  }, []);
+
+  useEffect(() => {
+    // No cached user = not authenticated
+    if (!cachedUser) {
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+
+      try {
+        // Fetch QR codes first (this is what user wants to see)
+        const qrcodesResponse = await fetch(`${API_URL}?path=/qrcodes`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (qrcodesResponse.ok) {
+          const qrcodesData = await qrcodesResponse.json();
+          setQrcodes(qrcodesData);
+        }
+
+        setLoading(false);
+
+        // Background: validate session (non-blocking)
+        fetch(`${API_URL}?path=/auth/me`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }).then(res => {
+          if (!res.ok) {
+            // Session expired, logout
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setIsAuthenticated(false);
+          } else {
+            // Update user data if needed
+            res.json().then(userData => {
+              setUser(userData);
+              localStorage.setItem('user', JSON.stringify(userData));
+            });
+          }
+        }).catch(() => {
+          // Network error, keep using cached data
+        });
+
+      } catch (error) {
+        console.error("Error loading QR codes:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  // Conditional returns AFTER all hooks
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <DashboardLayout
       title="My QR Codes"
       subtitle="Manage and track your digital assets"
-      user={user as any}
+      user={user}
       notifications={notifications}
     >
-      {/* Toast Notification */}
       {showToast && (
         <div className="toast toast-top toast-center z-[100] animate-in slide-in-from-top duration-300">
           <div className="alert alert-success shadow-lg border-none bg-success text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
@@ -219,6 +213,12 @@ export default function Dashboard() {
         </div>
       )}
 
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <span className="loading loading-spinner loading-lg text-red-600"></span>
+        </div>
+      ) : (
+      <>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
         <div className="flex-1 w-full max-w-2xl">
           <SearchFilter
@@ -237,7 +237,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Batch action bar */}
       {selectedIds.length > 0 && (
         <div className="bg-neutral text-neutral-content px-4 py-2 rounded-lg mb-4 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
@@ -254,7 +253,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Table */}
       <div className="bg-base-100 rounded-lg border border-base-300 shadow-sm overflow-visible">
         <div className="overflow-x-auto overflow-visible">
           <table className="table w-full overflow-visible">
@@ -282,7 +280,6 @@ export default function Dashboard() {
                   key={qr.id}
                   className={`hover:bg-base-200/50 group border-b border-base-300/50 transition-colors overflow-visible ${selectedIds.includes(qr.id) ? "bg-primary/5" : ""}`}
                 >
-                  {/* Checkbox */}
                   <td>
                     <input
                       type="checkbox"
@@ -292,7 +289,6 @@ export default function Dashboard() {
                     />
                   </td>
 
-                  {/* QR Thumb */}
                   <td>
                     <div className="bg-white border border-base-300 p-2 rounded-lg inline-flex shadow-sm group-hover:scale-105 transition-transform duration-300">
                       <QRCodeSVG
@@ -306,7 +302,6 @@ export default function Dashboard() {
                     </div>
                   </td>
 
-                  {/* Profile info */}
                   <td>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
@@ -328,23 +323,20 @@ export default function Dashboard() {
                     </div>
                   </td>
 
-                  {/* Scans */}
                   <td className="text-center">
                     <span className="font-bold text-lg">{qr.scans || 0}</span>
                     <p className="text-xs text-base-content/30 font-bold">Scans</p>
                   </td>
 
-                  {/* Modified date */}
                   <td className="hidden lg:table-cell">
-                    <p className="font-bold" suppressHydrationWarning>
+                    <p className="font-bold">
                       {new Date(qr.updated_at || qr.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
-                    <p className="text-xs text-base-content/30" suppressHydrationWarning>
+                    <p className="text-xs text-base-content/30">
                       Created {new Date(qr.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
                   </td>
 
-                  {/* Status */}
                   <td>
                     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${qr.status === "published"
                       ? "bg-success/10 text-success border-success/20"
@@ -355,7 +347,6 @@ export default function Dashboard() {
                     </div>
                   </td>
 
-                  {/* Actions - INLINE BUTTONS */}
                   <td className="overflow-visible">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -379,22 +370,13 @@ export default function Dashboard() {
                       >
                         <Edit2 className="w-4 h-4" />
                       </Link>
-                      <Form
-                        method="post"
-                        onSubmit={(e) => !confirm("Delete this QR code?") && e.preventDefault()}
-                        className="inline"
+                      <button
+                        onClick={() => handleDelete(qr.id)}
+                        className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                        title="Delete"
                       >
-                        <input type="hidden" name="id" value={qr.id} />
-                        <button
-                          type="submit"
-                          name="_action"
-                          value="delete"
-                          className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </Form>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -415,6 +397,8 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      </>
+      )}
     </DashboardLayout>
   );
 }

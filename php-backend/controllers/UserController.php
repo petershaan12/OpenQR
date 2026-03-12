@@ -1,8 +1,8 @@
 <?php
 // controllers/UserController.php
-require_once '../services/UserService.php';
-require_once '../config/session.php';
-require_once '../helpers/response.php';
+require_once dirname(__DIR__) . '/services/UserService.php';
+require_once dirname(__DIR__) . '/config/session.php';
+require_once dirname(__DIR__) . '/helpers/response.php';
 
 class UserController {
     private $userService;

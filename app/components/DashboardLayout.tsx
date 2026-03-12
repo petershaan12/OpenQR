@@ -1,4 +1,4 @@
-import { Link, Form } from "react-router";
+import { Link } from "react-router-dom";
 import { Bell, Menu, PanelLeftOpen } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { useUIStore } from "@/store/useStore";
@@ -82,9 +82,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, subt
                                         )}
                                     </div>
                                     <div className="card-actions justify-center mt-3 pt-3 border-t border-base-300">
-                                        <Form method="post" action="/dashboard" className="w-full text-center">
-                                            <button type="submit" name="_action" value="mark_read" className="text-[10px] font-black uppercase text-base-content/40 hover:text-base-content transition-colors">Mark all as read</button>
-                                        </Form>
+                                        <button type="button" className="text-[10px] font-black uppercase text-base-content/40 hover:text-base-content transition-colors">Mark all as read</button>
                                     </div>
                                 </div>
                             </div>

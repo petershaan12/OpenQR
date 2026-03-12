@@ -1,182 +1,16 @@
-import { useState, useRef } from "react";
-import { useLoaderData, Form, useSearchParams, useNavigation, redirect } from "react-router";
-import { Plus, Trash2, Edit2, X, Check, Palette, Type, Save, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams, Navigate } from "react-router-dom";
+import { Plus, Trash2, Edit2, AlertCircle, Loader2 } from "lucide-react";
 import DashboardLayout from "~/components/DashboardLayout";
 import ThemeModal from "~/components/ThemeModal";
 
-export async function loader({ request }: { request: Request }) {
-  // Check if user is authenticated
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return redirect("/login");
-  }
-
-  try {
-    // Get user data from PHP backend
-    const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-    
-    const userResponse = await fetch(`${API_URL}?path=/auth/me`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    
-    if (!userResponse.ok) {
-      localStorage.removeItem('token');
-      return redirect("/login");
-    }
-    
-    const user = await userResponse.json();
-
-    // Get themes from PHP backend
-    const themesResponse = await fetch(`${API_URL}?path=/themes`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    
-    if (!themesResponse.ok) {
-      throw new Error("Failed to load themes");
-    }
-    
-    const themes = await themesResponse.json();
-
-    // Get notifications from PHP backend (if available)
-    // Note: You may need to implement this in your PHP backend
-    const notifications = []; // Placeholder - implement as needed
-
-    return { user, themes, notifications };
-  } catch (error) {
-    console.error("Error loading theme data:", error);
-    return redirect("/login");
-  }
-}
-
-export async function action({ request }: { request: Request }) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return redirect("/login");
-  }
-
-  const formData = await request.formData();
-  const _action = formData.get("_action");
-
-  if (_action === "create") {
-    const name = formData.get("name") as string;
-    const primary_color = formData.get("primary_color") as string;
-    const legal_info = formData.get("legal_info") as string;
-    const welcome_screen_time = parseInt(formData.get("welcome_screen_time") as string || "5");
-    const welcome_image = formData.get("welcome_image") as string;
-    const welcome_video = formData.get("welcome_video") as string;
-    const enable_welcome = formData.get("enable_welcome") === "on";
-
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-      
-      const response = await fetch(`${API_URL}?path=/themes`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          primary_color,
-          legal_info,
-          welcome_screen_time,
-          welcome_image,
-          welcome_video,
-          enable_welcome
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to create theme");
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Error creating theme:", error);
-      return { error: "Failed to create theme" };
-    }
-  }
-
-  if (_action === "update") {
-    const id = formData.get("id") as string;
-    const name = formData.get("name") as string;
-    const primary_color = formData.get("primary_color") as string;
-    const legal_info = formData.get("legal_info") as string;
-    const welcome_screen_time = parseInt(formData.get("welcome_screen_time") as string || "5");
-    const welcome_image = formData.get("welcome_image") as string;
-    const welcome_video = formData.get("welcome_video") as string;
-    const enable_welcome = formData.get("enable_welcome") === "on";
-
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-      
-      const response = await fetch(`${API_URL}?path=/themes/${id}`, {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          primary_color,
-          legal_info,
-          welcome_screen_time,
-          welcome_image,
-          welcome_video,
-          enable_welcome
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to update theme");
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Error updating theme:", error);
-      return { error: "Failed to update theme" };
-    }
-  }
-
-  if (_action === "delete") {
-    const id = formData.get("id") as string;
-
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-      
-      const response = await fetch(`${API_URL}?path=/themes/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to delete theme");
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Error deleting theme:", error);
-      return { error: "Failed to delete theme" };
-    }
-  }
-
-  return null;
-}
-
 export default function Theme() {
-  const { user, themes, notifications } = useLoaderData<any>();
-  const navigation = useNavigation();
+  const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+
+  const [user] = useState<any>(cachedUser);
+  const [themes, setThemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
   const [searchParams] = useSearchParams();
   const errorParam = searchParams.get("error");
   const modalRef = useRef<HTMLDialogElement>(null);
@@ -185,13 +19,84 @@ export default function Theme() {
   const [welcomeVideo, setWelcomeVideo] = useState<string | null>(null);
   const [enableWelcome, setEnableWelcome] = useState<boolean>(true);
   const [primaryColor, setPrimaryColor] = useState<string>("#dc2626");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!cachedUser) {
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+
+      try {
+        const themesResponse = await fetch(`${API_URL}?path=/themes`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (themesResponse.ok) {
+          setThemes(await themesResponse.json());
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading themes:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [cachedUser]);
+
+  const refreshThemes = async () => {
+    const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+    try {
+      const res = await fetch(`${API_URL}?path=/themes`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        setThemes(await res.json());
+      }
+    } catch (error) {
+      console.error("Error refreshing themes:", error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this theme?")) return;
+
+    setDeletingId(id);
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+      const response = await fetch(`${API_URL}?path=/themes/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        setThemes(prev => prev.filter(t => t.id !== id));
+      } else {
+        throw new Error("Failed to delete");
+      }
+    } catch (error) {
+      console.error("Error deleting theme:", error);
+      alert("Failed to delete theme");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleEdit = (theme: any) => {
     setEditingTheme(theme);
     setWelcomeImage(theme.welcome_image || null);
     setWelcomeVideo(theme.welcome_video || null);
     setPrimaryColor(theme.primary_color || "#dc2626");
-    setEnableWelcome(theme.enable_welcome !== 0 && theme.enable_welcome !== false && theme.enable_welcome !== "false");
+    setEnableWelcome(theme.enable_welcome !== 0 && theme.enable_welcome !== false);
     modalRef.current?.showModal();
   };
 
@@ -204,7 +109,7 @@ export default function Theme() {
     modalRef.current?.showModal();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -213,24 +118,27 @@ export default function Theme() {
     }
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Limit file size to 10MB for base64 storage if necessary, 
-      // but let's assume it's fine for now or handled.
       const reader = new FileReader();
       reader.onload = (event) => setWelcomeVideo(event.target?.result as string);
       reader.readAsDataURL(file);
     }
   };
 
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
-    <DashboardLayout
-      title="Theme Management"
-      subtitle="Customize your profile appearance"
-      user={user}
-      notifications={notifications}
-    >
+    <DashboardLayout title="Theme Management" subtitle="Customize your profile appearance" user={user} notifications={[]}>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <span className="loading loading-spinner loading-lg text-red-600"></span>
+        </div>
+      ) : (
+      <>
       {errorParam === "no_themes" && (
         <div className="alert alert-warning shadow-sm font-bold rounded-lg border-warning/20 mb-2">
           <AlertCircle className="w-5 h-5 animate-pulse" />
@@ -240,6 +148,7 @@ export default function Theme() {
           </div>
         </div>
       )}
+
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {themes.map((t: any) => (
@@ -247,9 +156,7 @@ export default function Theme() {
               <div className="h-2 w-full" style={{ backgroundColor: t.primary_color }} />
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-base-content">
-                    {t.name}
-                  </h3>
+                  <h3 className="font-bold text-base-content">{t.name}</h3>
                   <div className="w-6 h-6 rounded-full border border-base-300 shadow-inner" style={{ backgroundColor: t.primary_color }} />
                 </div>
 
@@ -270,33 +177,22 @@ export default function Theme() {
                       <button onClick={() => handleEdit(t)} className="btn btn-ghost btn-sm btn-square hover:bg-base-200">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <Form method="post" onSubmit={(e) => !confirm("Delete this theme?") && e.preventDefault()}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <button
-                          type="submit"
-                          name="_action"
-                          value="delete"
-                          disabled={navigation.state !== "idle"}
-                          className="btn btn-ghost btn-sm btn-square hover:bg-error/10 hover:text-error disabled:opacity-50"
-                        >
-                          {navigation.state !== "idle" && navigation.formData?.get("id") === String(t.id) && navigation.formData?.get("_action") === "delete" ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-error" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </Form>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        disabled={deletingId === t.id}
+                        className="btn btn-ghost btn-sm btn-square hover:bg-error/10 hover:text-error disabled:opacity-50"
+                      >
+                        {deletingId === t.id ? <Loader2 className="w-4 h-4 animate-spin text-error" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
                     </>
                   )}
-                  {!t.user_id && (
-                    <span className="text-[10px] font-bold text-base-content/20 italic">Global Theme</span>
-                  )}
+                  {!t.user_id && <span className="text-[10px] font-bold text-base-content/20 italic">Global Theme</span>}
                 </div>
               </div>
             </div>
           ))}
 
-          <button onClick={handleCreateNew} className="bg-base-200/50 border-2 border-dashed border-base-300 rounded-lg p-10 flex flex-col items-center justify-center text-base-content/30 hover:bg-base-200 hover:text-base-content/50 transition-all gap-3 overflow-hidden cursor-pointer active:scale-95">
+          <button onClick={handleCreateNew} className="bg-base-200/50 border-2 border-dashed border-base-300 rounded-lg p-10 flex flex-col items-center justify-center text-base-content/30 hover:bg-base-200 hover:text-base-content/50 transition-all gap-3 cursor-pointer active:scale-95">
             <div className="w-12 h-12 bg-base-100 rounded-lg flex items-center justify-center shadow-sm">
               <Plus className="w-6 h-6" />
             </div>
@@ -318,7 +214,10 @@ export default function Theme() {
         handleVideoUpload={handleVideoUpload}
         primaryColor={primaryColor}
         setPrimaryColor={setPrimaryColor}
+        onSave={refreshThemes}
       />
+      </>
+      )}
     </DashboardLayout>
   );
 }

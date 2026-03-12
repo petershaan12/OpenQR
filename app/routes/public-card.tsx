@@ -1,77 +1,122 @@
-import { useState, useEffect } from "react";
-import { useLoaderData } from "react-router";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import {
     User,
     Phone,
     Mail,
     Globe,
     Plus,
-    QrCode as QrCodeIcon,
 } from "lucide-react";
 import { socialOptions } from "~/components/shared/SocialIcons";
-import type { Route } from "./+types/public-card";
 import WelcomeScreen from "~/components/WelcomeScreen";
 
-export async function loader({ params }: Route.LoaderArgs) {
-    if (!params.id) throw new Response("Not Found", { status: 404 });
-
-    try {
-        const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-        
-        const response = await fetch(`${API_URL}?path=/qrcodes/public/${params.id}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-        
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Response("Not Found", { status: 404 });
-            }
-            throw new Error("Failed to load QR code data");
-        }
-        
-        const data = await response.json();
-
-        if (!data || data.qr.status !== "published") {
-            throw new Response("Not Found", { status: 404 });
-        }
-
-        // Increment scan count
-        await fetch(`${API_URL}?path=/qrcodes/${params.id}/increment`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        return data;
-    } catch (error) {
-        console.error("Error loading public card data:", error);
-        throw new Response("Not Found", { status: 500 });
-    }
-}
-
-
-
-
-
-async function downloadVCard(qr: any, phones: any[]) {
-    // Navigating directly to the vcard endpoint triggers the OS native handler
-    // This allows Android/iOS to instantly prompt "Add to Contacts" 
-    // instead of silently saving a .vcf file to the downloads folder.
-    window.location.href = `/${qr.unique_id}/vcard`;
-}
-
 export default function PublicCard() {
-    const { qr, phones } = useLoaderData<any>();
+    const { id } = useParams<{ id: string }>();
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [showSplash, setShowSplash] = useState(true);
+
+    // Derived values - safe to compute even when data is null
+    const qr = data?.qr || {};
+    const phones = data?.phones || [];
     const hasVideo = qr.welcome_video && qr.welcome_video.length > 0;
-    const [showSplash, setShowSplash] = useState(qr.enable_welcome !== 0 && (qr.welcome_screen_time > 0 || hasVideo));
     const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
     const primaryColor = qr.primary_color || '#DC2626';
 
+    const socialLinks = useMemo(() => {
+        if (!qr.social_network) return {};
+        try {
+            if (qr.social_network.startsWith('{') || qr.social_network.startsWith('[')) {
+                return JSON.parse(qr.social_network);
+            }
+            return { "Website": qr.social_network };
+        } catch (e) {
+            return { "Website": qr.social_network || "" };
+        }
+    }, [qr.social_network]);
+
+    const activeSocialLinks = useMemo(() =>
+        Object.entries(socialLinks).filter(([_, val]) => val),
+        [socialLinks]
+    );
+
+    const handleSplashEnd = useCallback(() => {
+        setShowSplash(false);
+    }, []);
+
+    const downloadVCard = useCallback(() => {
+        if (qr.unique_id) {
+            window.location.href = `/${qr.unique_id}/vcard`;
+        }
+    }, [qr.unique_id]);
+
+    // Fetch data
     useEffect(() => {
+        if (!id) {
+            setError(true);
+            setLoading(false);
+            return;
+        }
+
+        const fetchData = async () => {
+            try {
+                const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+
+                const response = await fetch(`${API_URL}?path=/qrcodes/public/${id}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        setError(true);
+                        setLoading(false);
+                        return;
+                    }
+                    throw new Error("Failed to load QR code data");
+                }
+
+                const result = await response.json();
+
+                if (!result || result.qr.status !== "published") {
+                    setError(true);
+                    setLoading(false);
+                    return;
+                }
+
+                // Increment scan count
+                fetch(`${API_URL}?path=/qrcodes/${id}/increment`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                }).catch(() => {}); // Fire and forget
+
+                // Determine if splash should show
+                const qrData = result.qr;
+                const hasVideoContent = qrData.welcome_video && qrData.welcome_video.length > 0;
+                const shouldShowSplash = qrData.enable_welcome !== 0 && (qrData.welcome_screen_time > 0 || hasVideoContent);
+
+                setShowSplash(shouldShowSplash);
+                setData(result);
+                setLoading(false);
+            } catch (error) {
+                console.error("Error loading public card data:", error);
+                setError(true);
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
+    // Splash screen timeout
+    useEffect(() => {
+        if (!data || !showSplash) return;
+
         // Only trigger timeout if there's NO video but splash is enabled
         if (qr.enable_welcome !== 0 && qr.welcome_screen_time > 0 && !hasVideo) {
             const timer = setTimeout(() => {
@@ -79,27 +124,38 @@ export default function PublicCard() {
             }, qr.welcome_screen_time * 1000);
             return () => clearTimeout(timer);
         }
-    }, [qr.welcome_screen_time, hasVideo]);
+    }, [data, showSplash, qr.enable_welcome, qr.welcome_screen_time, hasVideo]);
 
-    const handleSplashEnd = () => {
-        setShowSplash(false);
-    };
-
-    let socialLinks: Record<string, string> = {};
-    try {
-        if (qr.social_network && (qr.social_network.startsWith('{') || qr.social_network.startsWith('['))) {
-            socialLinks = JSON.parse(qr.social_network);
-        } else if (qr.social_network) {
-            socialLinks = { "Website": qr.social_network };
-        }
-    } catch (e) {
-        socialLinks = { "Website": qr.social_network || "" };
+    // Conditional renders AFTER all hooks
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold">Not Found</h1>
+                    <p className="text-gray-500">The requested QR code could not be found.</p>
+                </div>
+            </div>
+        );
     }
 
-    const activeSocialLinks = Object.entries(socialLinks).filter(([_, val]) => val);
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-base-100 flex items-center justify-center">
+                <span className="loading loading-spinner loading-lg text-red-600"></span>
+            </div>
+        );
+    }
 
-    if (showSplash) {
-        return <WelcomeScreen qr={qr} showSplash={showSplash} primaryColor={primaryColor} displayName={displayName} onVideoEnd={handleSplashEnd} />;
+    if (showSplash && data) {
+        return (
+            <WelcomeScreen
+                qr={qr}
+                showSplash={showSplash}
+                primaryColor={primaryColor}
+                displayName={displayName}
+                onVideoEnd={handleSplashEnd}
+            />
+        );
     }
 
     return (
@@ -107,7 +163,7 @@ export default function PublicCard() {
             <div className="w-full h-screen md:max-w-sm bg-base-100 flex flex-col relative">
                 <div className="flex-1 flex flex-col overflow-y-auto">
 
-                    {/* Hero Photo — large, no overlay */}
+                    {/* Hero Photo */}
                     <div className="relative w-full aspect-[4/3] overflow-hidden">
                         {qr.profile_image ? (
                             <img
@@ -120,22 +176,23 @@ export default function PublicCard() {
                                 <User className="w-24 h-24" style={{ color: `${primaryColor}40` }} />
                             </div>
                         )}
-                        {/* Subtle gradient at bottom of photo */}
                         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
                     </div>
 
-                    {/* Name & Title — left aligned */}
+                    {/* Name & Title */}
                     <div className="px-6 -mt-2 relative z-10">
                         <h1 className="text-xl font-bold leading-tight">
                             {displayName}
                         </h1>
-                        <p className="text-gray-400 text-lg mt-0" style={{ fontFamily: "'MonteCarlo', cursive", color: primaryColor }}>{qr.title || 'Title'}</p>
+                        <p className="text-gray-400 text-lg mt-0" style={{ fontFamily: "'MonteCarlo', cursive", color: primaryColor }}>
+                            {qr.title || 'Title'}
+                        </p>
                     </div>
 
-                    {/* Add Contact Button — outlined */}
+                    {/* Add Contact Button */}
                     <div className="px-6 mt-5">
                         <button
-                            onClick={() => downloadVCard(qr, phones)}
+                            onClick={downloadVCard}
                             className="inline-flex items-center gap-2 px-6 py-2.5 text-white rounded-full font-bold text-sm border-2 transition-all hover:brightness-110 active:scale-95"
                             style={{ backgroundColor: primaryColor }}
                         >
@@ -170,7 +227,6 @@ export default function PublicCard() {
                             </div>
                         )}
 
-                        {/* Website row in contact info */}
                         {socialLinks['Website'] && (
                             <div className="flex items-start gap-4">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ color: primaryColor }}>
@@ -178,20 +234,23 @@ export default function PublicCard() {
                                 </div>
                                 <div className="flex-1 pt-0.5">
                                     <p className="text-sm font-bold text-gray-800">Website</p>
-                                    <a href={socialLinks['Website'].startsWith('http') ? socialLinks['Website'] : `https://${socialLinks['Website']}`} target="_blank" rel="noopener noreferrer" className="block text-sm text-gray-500 hover:text-gray-800 transition-colors">{socialLinks['Website'].replace(/^https?:\/\//, '')}</a>
+                                    <a
+                                        href={socialLinks['Website'].startsWith('http') ? socialLinks['Website'] : `https://${socialLinks['Website']}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-sm text-gray-500 hover:text-gray-800 transition-colors"
+                                    >
+                                        {socialLinks['Website'].replace(/^https?:\/\//, '')}
+                                    </a>
                                 </div>
                             </div>
                         )}
                     </div>
 
-
-
-                    {/* Spacer to push footer down */}
                     <div className="flex-1" />
 
-                    {/* Footer — pinned at bottom */}
+                    {/* Footer */}
                     <div className="text-center py-6">
-                        {/* Social Icons — exclude Website */}
                         <div className="flex justify-center gap-4 mt-10 mb-4">
                             {activeSocialLinks.filter(([k]) => k.toLowerCase() !== 'website').map(([key, val], i) => {
                                 const option = socialOptions.find(o => o.name.toLowerCase() === key.toLowerCase());
@@ -209,7 +268,7 @@ export default function PublicCard() {
                                 );
                             })}
                         </div>
-                        <p className="text-[11px] text-gray-400">{qr.legal_info || "E.g. © YYYY Company Name. All Rights Reserved."}</p>
+                        <p className="text-[11px] text-gray-400">{qr.legal_info || "© YYYY Company Name. All Rights Reserved."}</p>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Mail, Lock, LogIn, QrCode, AlertCircle, Loader2 } from "lucide-react";
 
 export default function Login() {

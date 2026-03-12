@@ -1,6 +1,5 @@
-import { Form, useNavigation } from "react-router";
 import { Palette, Type, Plus, X, Save, Edit2, Loader2 } from "lucide-react";
-import { RefObject } from "react";
+import { RefObject, useState } from "react";
 
 export default function ThemeModal({
     modalRef,
@@ -14,7 +13,8 @@ export default function ThemeModal({
     handleImageUpload,
     handleVideoUpload,
     primaryColor,
-    setPrimaryColor
+    setPrimaryColor,
+    onSave
 }: {
     modalRef: RefObject<HTMLDialogElement | null>;
     editingTheme: any;
@@ -28,10 +28,53 @@ export default function ThemeModal({
     handleVideoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => void;
     primaryColor: string;
     setPrimaryColor: (val: string) => void;
+    onSave?: () => void;
 }) {
-    const navigation = useNavigation();
-    const isSubmitting = navigation.state === "submitting" &&
-        (navigation.formData?.get("_action") === "create" || navigation.formData?.get("_action") === "update");
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSubmitting(true);
+
+        const formData = new FormData(e.currentTarget);
+        const data = {
+            id: editingTheme?.id,
+            name: formData.get('name') as string,
+            primary_color: formData.get('primary_color') as string,
+            legal_info: formData.get('legal_info') as string,
+            welcome_screen_time: parseInt(formData.get('welcome_screen_time') as string) || 5,
+            enable_welcome: enableWelcome,
+            welcome_image: welcomeImage || null,
+            welcome_video: welcomeVideo || null,
+        };
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
+            const token = localStorage.getItem('token');
+
+            const response = await fetch(`${API_URL}?path=/themes${editingTheme ? `/${editingTheme.id}` : ''}`, {
+                method: editingTheme ? "PUT" : "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save theme");
+            }
+
+            modalRef.current?.close();
+            onSave?.();
+        } catch (error) {
+            console.error("Error saving theme:", error);
+            alert("Failed to save theme");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
             <div className="modal-box p-0 overflow-hidden border border-base-300 shadow-2xl rounded-lg bg-base-100">
@@ -45,7 +88,7 @@ export default function ThemeModal({
                     </form>
                 </div>
 
-                <Form method="post" onSubmit={() => modalRef.current?.close()} className="px-6 pb-6 space-y-4 overflow-y-auto max-h-[calc(100vh-14rem)]">
+                <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4 overflow-y-auto max-h-[calc(100vh-14rem)]">
                     {editingTheme && <input type="hidden" name="id" value={editingTheme.id} />}
                     <div className="form-control">
                         <label className="label py-1">
@@ -181,20 +224,18 @@ export default function ThemeModal({
                         </form>
                         <button
                             type="submit"
-                            name="_action"
-                            value={editingTheme ? "update" : "create"}
-                            disabled={isSubmitting}
+                            disabled={submitting}
                             className="btn-army px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? (
+                            {submitting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                                 editingTheme ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />
                             )}
-                            {isSubmitting ? (editingTheme ? "Updating..." : "Creating...") : (editingTheme ? "Update Theme" : "Create Theme")}
+                            {submitting ? (editingTheme ? "Updating..." : "Creating...") : (editingTheme ? "Update Theme" : "Create Theme")}
                         </button>
                     </div>
-                </Form>
+                </form>
             </div>
             <form method="dialog" className="modal-backdrop bg-base-content/20 backdrop-blur-[2px]">
                 <button>close</button>

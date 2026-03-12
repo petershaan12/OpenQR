@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, useNavigate, useSearchParams, useNavigation, useActionData } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Upload,
     Plus,
@@ -27,9 +27,12 @@ interface QRCodeFormProps {
     themes: Theme[];
     initialQRCode?: any;
     user: any;
+    onSubmit?: (data: any) => void;
+    submitting?: boolean;
+    submitResult?: { success?: boolean; error?: string } | null;
 }
 
-export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCodeFormProps) {
+export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit, submitting = false, submitResult }: QRCodeFormProps) {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [step, setStep] = useState<number>(searchParams.get("step") === "2" ? 2 : 1);
@@ -45,10 +48,8 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
     );
     const [selectedSocial, setSelectedSocial] = useState<string>("Instagram");
     const [error, setError] = useState<string | null>(null);
-    const actionData = useActionData<any>();
 
-    const navigation = useNavigation();
-    const isSubmitting = navigation.state !== "idle";
+    const isSubmitting = submitting;
     const [showToast, setShowToast] = useState(false);
     const [lastSavedData, setLastSavedData] = useState<any>(initialQRCode);
 
@@ -118,9 +119,9 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
         }
     }, [selectedSocial, socialLinks]);
 
-    // Effect to handle action success
+    // Effect to handle submit success
     useEffect(() => {
-        if (actionData?.success) {
+        if (submitResult?.success) {
             setShowToast(true);
             // On success, update lastSavedData to current state
             setLastSavedData({
@@ -131,7 +132,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                 social_network: JSON.stringify(socialLinks)
             });
         }
-    }, [actionData]);
+    }, [submitResult]);
 
     const [formData, setFormData] = useState<FormData & { status: string }>({
         name: initialQRCode?.name || "",
@@ -206,7 +207,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                 <div className="toast toast-top toast-center z-[100] animate-in slide-in-from-top duration-300">
                     <div className="alert alert-success shadow-lg border-none bg-success text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
                         <Check className="w-5 h-5" />
-                        <span>{actionData?.success ? "Changes saved successfully!" : "Link copied to clipboard!"}</span>
+                        <span>{submitResult?.success ? "Changes saved successfully!" : "Link copied to clipboard!"}</span>
                     </div>
                 </div>
             )}
@@ -268,13 +269,28 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                     </div>
                 </div>
 
-                <Form
+                <form
                     id="qrcode-form"
-                    method="post"
                     className="space-y-6"
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
                             e.preventDefault();
+                        }
+                    }}
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (onSubmit) {
+                            onSubmit({
+                                name: formData.name,
+                                surname: formData.surname,
+                                title: formData.title,
+                                theme_id: formData.theme_id,
+                                status: formData.status,
+                                profile_image: profileImage,
+                                phones: phoneInputs.map(p => p.value).filter(v => v.trim()),
+                                email: emailInputs[0] || '',
+                                social_network: formData.social_network,
+                            });
                         }
                     }}
                 >
@@ -680,7 +696,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user }: QRCode
                             </div>
                         </div>
                     )}
-                </Form>
+                </form>
             </div>
 
             {/* Right Sidebar - Phone Preview (1/4) */}

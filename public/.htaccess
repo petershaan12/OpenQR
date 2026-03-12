@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Don't rewrite files or directories
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Don't rewrite API requests (let PHP handle them)
+  RewriteCond %{REQUEST_URI} !^/php-backend
+  RewriteCond %{REQUEST_URI} !^/api
+
+  # Rewrite everything else to index.html for SPA routing
+  RewriteRule ^ index.html [L]
+</IfModule>

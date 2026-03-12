@@ -1,6 +1,6 @@
 <?php
 // services/ThemeService.php
-require_once '../config/database.php';
+require_once dirname(__DIR__) . '/config/database.php';
 
 class ThemeService {
     private $db;

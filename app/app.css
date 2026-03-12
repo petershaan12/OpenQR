@@ -1,21 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=MonteCarlo&display=swap");
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @plugin "daisyui" {
-  themes:
-    light --default,
-    dark;
-}
-
-@variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
-
-@theme {
-  --color-primary: #dc2626;
-  --color-primary-600: #b91c1c;
-  --color-secondary: #991b1b;
-  --color-secondary-600: #7f1d1d;
-  --color-accent: #f87171;
-  --color-neutral: #1f2937;
+  themes: light --default, dark;
 }
 
 :root {
@@ -58,9 +47,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
 }
 
 .label-text {
@@ -100,11 +88,11 @@ textarea:focus {
   justify-content: center;
   gap: 8px;
   white-space: nowrap;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
 }
 .btn-army:hover {
   background-color: var(--primary-focus);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 35%, transparent);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
   transform: translateY(-1px);
 }
 .btn-army:active {
@@ -148,10 +136,6 @@ textarea:focus {
   }
 }
 
-.animate-pulse {
-  animation: pulse 2s infinite;
-}
-
 [show-scrollbar]::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -188,4 +172,19 @@ textarea:focus {
 
 .slide-in-from-top {
   animation-name: slide-in-from-top;
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.zoom-in {
+  animation-name: zoom-in;
 }

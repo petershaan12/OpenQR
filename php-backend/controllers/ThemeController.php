@@ -1,8 +1,8 @@
 <?php
 // controllers/ThemeController.php
-require_once '../services/ThemeService.php';
-require_once '../config/session.php';
-require_once '../helpers/response.php';
+require_once dirname(__DIR__) . '/services/ThemeService.php';
+require_once dirname(__DIR__) . '/config/session.php';
+require_once dirname(__DIR__) . '/helpers/response.php';
 
 class ThemeController {
     private $themeService;
