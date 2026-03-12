@@ -25,9 +25,10 @@ export async function action({ request }: { request: Request }) {
     const legal_info = formData.get("legal_info") as string;
     const welcome_screen_time = parseInt(formData.get("welcome_screen_time") as string || "5");
     const welcome_image = formData.get("welcome_image") as string;
+    const welcome_video = formData.get("welcome_video") as string;
     const enable_welcome = formData.get("enable_welcome") === "on";
 
-    await createTheme({ name, primary_color, legal_info, welcome_screen_time, welcome_image, enable_welcome, user_id: userId });
+    await createTheme({ name, primary_color, legal_info, welcome_screen_time, welcome_image, welcome_video, enable_welcome, user_id: userId });
     await createNotification({
       user_id: userId,
       title: "Theme Created",
@@ -44,9 +45,10 @@ export async function action({ request }: { request: Request }) {
     const legal_info = formData.get("legal_info") as string;
     const welcome_screen_time = parseInt(formData.get("welcome_screen_time") as string || "5");
     const welcome_image = formData.get("welcome_image") as string;
+    const welcome_video = formData.get("welcome_video") as string;
     const enable_welcome = formData.get("enable_welcome") === "on";
 
-    await updateTheme(parseInt(id), userId, { name, primary_color, legal_info, welcome_screen_time, welcome_image, enable_welcome });
+    await updateTheme(parseInt(id), userId, { name, primary_color, legal_info, welcome_screen_time, welcome_image, welcome_video, enable_welcome });
     await createNotification({
       user_id: userId,
       title: "Theme Updated",
@@ -73,12 +75,14 @@ export default function Theme() {
   const modalRef = useRef<HTMLDialogElement>(null);
   const [editingTheme, setEditingTheme] = useState<any>(null);
   const [welcomeImage, setWelcomeImage] = useState<string | null>(null);
+  const [welcomeVideo, setWelcomeVideo] = useState<string | null>(null);
   const [enableWelcome, setEnableWelcome] = useState<boolean>(true);
   const [primaryColor, setPrimaryColor] = useState<string>("#dc2626");
 
   const handleEdit = (theme: any) => {
     setEditingTheme(theme);
     setWelcomeImage(theme.welcome_image || null);
+    setWelcomeVideo(theme.welcome_video || null);
     setPrimaryColor(theme.primary_color || "#dc2626");
     setEnableWelcome(theme.enable_welcome !== 0 && theme.enable_welcome !== false && theme.enable_welcome !== "false");
     modalRef.current?.showModal();
@@ -87,6 +91,7 @@ export default function Theme() {
   const handleCreateNew = () => {
     setEditingTheme(null);
     setWelcomeImage(null);
+    setWelcomeVideo(null);
     setPrimaryColor("#dc2626");
     setEnableWelcome(true);
     modalRef.current?.showModal();
@@ -97,6 +102,17 @@ export default function Theme() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => setWelcomeImage(event.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Limit file size to 10MB for base64 storage if necessary, 
+      // but let's assume it's fine for now or handled.
+      const reader = new FileReader();
+      reader.onload = (event) => setWelcomeVideo(event.target?.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -189,7 +205,10 @@ export default function Theme() {
         setEnableWelcome={setEnableWelcome}
         welcomeImage={welcomeImage}
         setWelcomeImage={setWelcomeImage}
+        welcomeVideo={welcomeVideo}
+        setWelcomeVideo={setWelcomeVideo}
         handleImageUpload={handleImageUpload}
+        handleVideoUpload={handleVideoUpload}
         primaryColor={primaryColor}
         setPrimaryColor={setPrimaryColor}
       />

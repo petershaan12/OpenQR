@@ -133,7 +133,7 @@ export async function getQRCodeByUniqueId(uniqueId: string): Promise<any> {
   const db = getDb();
   const [qrcodes]: any = await db.query(
     `
-    SELECT q.*, t.primary_color, t.legal_info, t.welcome_screen_time, t.welcome_image, t.enable_welcome
+    SELECT q.*, t.primary_color, t.legal_info, t.welcome_screen_time, t.welcome_image, t.welcome_video, t.enable_welcome
     FROM qrcodes q
     LEFT JOIN themes t ON q.theme_id = t.id
     WHERE q.unique_id = ?

@@ -37,6 +37,11 @@ type Pages = {
   "/account": {
     params: {};
   };
+  "/:id/vcard": {
+    params: {
+      "id": string;
+    };
+  };
   "/:id": {
     params: {
       "id": string;
@@ -47,7 +52,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/dashboard" | "/create-qrcode" | "/edit-qrcode/:id" | "/theme" | "/users" | "/account" | "/:id";
+    page: "/" | "/login" | "/dashboard" | "/create-qrcode" | "/edit-qrcode/:id" | "/theme" | "/users" | "/account" | "/:id/vcard" | "/:id";
   };
   "routes/login.tsx": {
     id: "routes/login";
@@ -84,6 +89,10 @@ type RouteFiles = {
     id: "routes/account";
     page: "/account";
   };
+  "routes/vcard-download.tsx": {
+    id: "routes/vcard-download";
+    page: "/:id/vcard";
+  };
   "routes/public-card.tsx": {
     id: "routes/public-card";
     page: "/:id";
@@ -101,5 +110,6 @@ type RouteModules = {
   "routes/theme": typeof import("./app/routes/theme.tsx");
   "routes/users": typeof import("./app/routes/users.tsx");
   "routes/account": typeof import("./app/routes/account.tsx");
+  "routes/vcard-download": typeof import("./app/routes/vcard-download.tsx");
   "routes/public-card": typeof import("./app/routes/public-card.tsx");
 };

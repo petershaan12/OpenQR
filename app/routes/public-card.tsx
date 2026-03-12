@@ -40,18 +40,24 @@ async function downloadVCard(qr: any, phones: any[]) {
 
 export default function PublicCard() {
     const { qr, phones } = useLoaderData<any>();
-    const [showSplash, setShowSplash] = useState(qr.enable_welcome !== 0 && qr.welcome_screen_time > 0);
+    const hasVideo = qr.welcome_video && qr.welcome_video.length > 0;
+    const [showSplash, setShowSplash] = useState(qr.enable_welcome !== 0 && (qr.welcome_screen_time > 0 || hasVideo));
     const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
     const primaryColor = qr.primary_color || '#DC2626';
 
     useEffect(() => {
-        if (qr.enable_welcome !== 0 && qr.welcome_screen_time > 0) {
+        // Only trigger timeout if there's NO video but splash is enabled
+        if (qr.enable_welcome !== 0 && qr.welcome_screen_time > 0 && !hasVideo) {
             const timer = setTimeout(() => {
                 setShowSplash(false);
             }, qr.welcome_screen_time * 1000);
             return () => clearTimeout(timer);
         }
-    }, [qr.welcome_screen_time]);
+    }, [qr.welcome_screen_time, hasVideo]);
+
+    const handleSplashEnd = () => {
+        setShowSplash(false);
+    };
 
     let socialLinks: Record<string, string> = {};
     try {
@@ -67,7 +73,7 @@ export default function PublicCard() {
     const activeSocialLinks = Object.entries(socialLinks).filter(([_, val]) => val);
 
     if (showSplash) {
-        return <WelcomeScreen qr={qr} showSplash={showSplash} primaryColor={primaryColor} displayName={displayName} />;
+        return <WelcomeScreen qr={qr} showSplash={showSplash} primaryColor={primaryColor} displayName={displayName} onVideoEnd={handleSplashEnd} />;
     }
 
     return (

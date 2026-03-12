@@ -15,6 +15,7 @@ export interface ThemeData {
   user_id: number | null;
   welcome_screen_time?: number;
   welcome_image?: string | null;
+  welcome_video?: string | null;
   enable_welcome?: boolean;
   created_at?: string;
 }

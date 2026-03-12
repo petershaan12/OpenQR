@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS themes (
   legal_info TEXT,
   welcome_screen_time INT DEFAULT 5,
   welcome_image LONGTEXT,
+  welcome_video LONGTEXT,
   enable_welcome BOOLEAN DEFAULT FALSE,
   user_id INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -9,7 +9,10 @@ export default function ThemeModal({
     setEnableWelcome,
     welcomeImage,
     setWelcomeImage,
+    welcomeVideo,
+    setWelcomeVideo,
     handleImageUpload,
+    handleVideoUpload,
     primaryColor,
     setPrimaryColor
 }: {
@@ -19,7 +22,10 @@ export default function ThemeModal({
     setEnableWelcome: (val: boolean) => void;
     welcomeImage: string | null;
     setWelcomeImage: (val: string | null) => void;
+    welcomeVideo: string | null;
+    setWelcomeVideo: (val: string | null) => void;
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => void;
+    handleVideoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => void;
     primaryColor: string;
     setPrimaryColor: (val: string) => void;
 }) {
@@ -94,9 +100,10 @@ export default function ThemeModal({
                             min="0"
                             max="30"
                             defaultValue={editingTheme?.welcome_screen_time || "5"}
-                            disabled={!enableWelcome}
-                            className={`input input-bordered font-medium w-full ${!enableWelcome ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={!enableWelcome || !!welcomeVideo}
+                            className={`input input-bordered font-medium w-full ${(!enableWelcome || !!welcomeVideo) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
+                        {welcomeVideo && <p className="text-[10px] text-primary font-bold mt-1">* Video welcome screen has no timeout</p>}
                     </div>
 
                     <div className="form-control flex flex-row items-center justify-between py-2">
@@ -110,31 +117,61 @@ export default function ThemeModal({
                         />
                     </div>
 
-                    <div className="form-control">
-                        <label className="label py-1">
-                            <span className="label-text font-bold text-base-content/70">Welcome Splash Image</span>
-                        </label>
-                        <div className="flex flex-col gap-2">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageUpload(e, !!editingTheme)}
-                                disabled={!enableWelcome}
-                                className={`file-input file-input-bordered h-10 file-input-sm w-full font-medium ${!enableWelcome ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            />
-                            {welcomeImage && (
-                                <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-base-300 shadow-sm bg-base-200">
-                                    <img src={welcomeImage} alt="Welcome Splash Preview" className="w-full h-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setWelcomeImage(null)}
-                                        className="absolute top-2 right-2 btn btn-xs btn-circle btn-error shadow"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            )}
-                            <input type="hidden" name="welcome_image" value={welcomeImage || ""} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="form-control">
+                            <label className="label py-1">
+                                <span className="label-text font-bold text-base-content/70">Welcome Splash Image</span>
+                            </label>
+                            <div className="flex flex-col gap-2">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, !!editingTheme)}
+                                    disabled={!enableWelcome}
+                                    className={`file-input file-input-bordered h-10 file-input-sm w-full font-medium ${!enableWelcome ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                />
+                                {welcomeImage && (
+                                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-base-300 shadow-sm bg-base-200">
+                                        <img src={welcomeImage} alt="Welcome Splash Preview" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => setWelcomeImage(null)}
+                                            className="absolute top-2 right-2 btn btn-xs btn-circle btn-error shadow"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
+                                <input type="hidden" name="welcome_image" value={welcomeImage || ""} />
+                            </div>
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label py-1">
+                                <span className="label-text font-bold text-base-content/70">Welcome Splash Video</span>
+                            </label>
+                            <div className="flex flex-col gap-2">
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    onChange={(e) => handleVideoUpload(e, !!editingTheme)}
+                                    disabled={!enableWelcome}
+                                    className={`file-input file-input-bordered h-10 file-input-sm w-full font-medium ${!enableWelcome ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                />
+                                {welcomeVideo && (
+                                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-base-300 shadow-sm bg-base-200">
+                                        <video src={welcomeVideo} className="w-full h-full object-cover" controls />
+                                        <button
+                                            type="button"
+                                            onClick={() => setWelcomeVideo(null)}
+                                            className="absolute top-2 right-2 btn btn-xs btn-circle btn-error shadow"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
+                                <input type="hidden" name="welcome_video" value={welcomeVideo || ""} />
+                            </div>
                         </div>
                     </div>
 
