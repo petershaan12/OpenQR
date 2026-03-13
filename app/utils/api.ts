@@ -1,3 +1,5 @@
+import { compressImage } from './imageUtils';
+
 const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
 
 export async function uploadImage(base64Image: string): Promise<string> {
@@ -6,11 +8,14 @@ export async function uploadImage(base64Image: string): Promise<string> {
     return base64Image;
   }
 
+  // Compress image to max 800px and 80% quality (usually < 100KB)
+  const compressed = await compressImage(base64Image, 800, 0.8);
+
   const response = await fetch(`${API_URL}?path=/upload/base64`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ image: base64Image }),
+    body: JSON.stringify({ image: compressed }),
   });
 
   if (!response.ok) {
