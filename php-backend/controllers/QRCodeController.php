@@ -47,7 +47,7 @@ class QRCodeController {
         }
 
         requireAuth();
-        
+
         $input = json_decode(file_get_contents('php://input'), true);
 
         $requiredFields = ['name', 'surname', 'title', 'email', 'social_network', 'theme_id', 'status', 'phones'];
@@ -66,7 +66,7 @@ class QRCodeController {
         }
 
         requireAuth();
-        
+
         $input = json_decode(file_get_contents('php://input'), true);
 
         $userId = getCurrentUserId();

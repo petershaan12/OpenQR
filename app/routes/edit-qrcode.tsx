@@ -2,6 +2,7 @@ import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import DashboardLayout from "~/components/DashboardLayout";
 import QRCodeForm from "~/components/shared/QRCodeForm";
+import { updateQRCode } from "~/utils/api";
 
 export default function EditQRCode() {
   const { id } = useParams<{ id: string }>();
@@ -73,23 +74,12 @@ export default function EditQRCode() {
     setSubmitResult(null);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-
-      const response = await fetch(`${API_URL}?path=/qrcodes/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update QR code");
-      }
-
+      await updateQRCode(id!, formData);
       setSubmitResult({ success: true });
       setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating QR code:", error);
-      setSubmitResult({ error: "Failed to update QR code" });
+      setSubmitResult({ error: error.message || "Failed to update QR code" });
     } finally {
       setSubmitting(false);
     }

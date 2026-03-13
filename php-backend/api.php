@@ -4,6 +4,7 @@ require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/QRCodeController.php';
 require_once 'controllers/ThemeController.php';
+require_once 'controllers/UploadController.php';
 require_once 'config/session.php';
 require_once 'helpers/response.php';
 
@@ -138,6 +139,20 @@ $routes = [
         }
     },
     
+    // Upload routes
+    'POST:/upload/image' => function() {
+        $controller = new UploadController();
+        $controller->uploadImage();
+    },
+    'POST:/upload/base64' => function() {
+        $controller = new UploadController();
+        $controller->uploadBase64();
+    },
+    'DELETE:/upload/image' => function() {
+        $controller = new UploadController();
+        $controller->deleteImage();
+    },
+
     // Theme routes
     'GET:/themes' => function() {
         $controller = new ThemeController();

@@ -2,6 +2,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import DashboardLayout from "~/components/DashboardLayout";
 import QRCodeForm from "~/components/shared/QRCodeForm";
+import { createQRCode } from "~/utils/api";
 
 export default function CreateQRCode() {
   const navigate = useNavigate();
@@ -80,23 +81,11 @@ export default function CreateQRCode() {
     setSubmitResult(null);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
-
-      const response = await fetch(`${API_URL}?path=/qrcodes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, status: "draft" }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create QR code");
-      }
-
-      const qr = await response.json();
+      const qr = await createQRCode({ ...formData, status: "draft" });
       navigate(`/edit-qrcode/${qr.id}?step=2`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating QR code:", error);
-      setSubmitResult({ error: "Failed to create QR code" });
+      setSubmitResult({ error: error.message || "Failed to create QR code" });
     } finally {
       setSubmitting(false);
     }
