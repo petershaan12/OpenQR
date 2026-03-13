@@ -5,17 +5,22 @@ import QRCodeForm from "~/components/shared/QRCodeForm";
 
 export default function CreateQRCode() {
   const navigate = useNavigate();
-  const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
 
-  const [user, setUser] = useState<any>(cachedUser);
+  const [user, setUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    }
+    return null;
+  });
+
   const [themes, setThemes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   useEffect(() => {
-    if (!cachedUser) {
+    if (!user) {
       setIsAuthenticated(false);
       setLoading(false);
       return;
@@ -29,6 +34,7 @@ export default function CreateQRCode() {
         const themesResponse = await fetch(`${API_URL}?path=/themes`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
 
         if (themesResponse.ok) {
@@ -46,6 +52,7 @@ export default function CreateQRCode() {
         fetch(`${API_URL}?path=/auth/me`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         }).then(res => {
           if (!res.ok) {
             localStorage.removeItem('user');

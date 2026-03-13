@@ -47,7 +47,8 @@ export default function PublicCard() {
 
     const downloadVCard = useCallback(() => {
         if (qr.unique_id) {
-            window.location.href = `/${qr.unique_id}/vcard`;
+            // Langsung ke backend API tanpa loading screen
+            window.location.href = `/php-backend/api.php?path=/qrcodes/${qr.unique_id}/vcard`;
         }
     }, [qr.unique_id]);
 

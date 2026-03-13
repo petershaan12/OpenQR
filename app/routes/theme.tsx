@@ -5,12 +5,16 @@ import DashboardLayout from "~/components/DashboardLayout";
 import ThemeModal from "~/components/ThemeModal";
 
 export default function Theme() {
-  const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+  const [user] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    }
+    return null;
+  });
 
-  const [user] = useState<any>(cachedUser);
   const [themes, setThemes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const [searchParams] = useSearchParams();
   const errorParam = searchParams.get("error");
   const modalRef = useRef<HTMLDialogElement>(null);
@@ -22,7 +26,7 @@ export default function Theme() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!cachedUser) {
+    if (!user) {
       setIsAuthenticated(false);
       setLoading(false);
       return;
@@ -35,6 +39,7 @@ export default function Theme() {
         const themesResponse = await fetch(`${API_URL}?path=/themes`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
 
         if (themesResponse.ok) {
@@ -49,7 +54,7 @@ export default function Theme() {
     };
 
     fetchData();
-  }, [cachedUser]);
+  }, []); // Empty dependency - run once on mount
 
   const refreshThemes = async () => {
     const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
@@ -57,6 +62,7 @@ export default function Theme() {
       const res = await fetch(`${API_URL}?path=/themes`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       if (res.ok) {
         setThemes(await res.json());
@@ -96,7 +102,9 @@ export default function Theme() {
     setWelcomeImage(theme.welcome_image || null);
     setWelcomeVideo(theme.welcome_video || null);
     setPrimaryColor(theme.primary_color || "#dc2626");
-    setEnableWelcome(theme.enable_welcome !== 0 && theme.enable_welcome !== false);
+    // Handle string "0", number 0, false, "false"
+    const isEnabled = theme.enable_welcome == 1 || theme.enable_welcome === true || theme.enable_welcome === "true";
+    setEnableWelcome(isEnabled);
     modalRef.current?.showModal();
   };
 

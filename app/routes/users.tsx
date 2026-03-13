@@ -6,26 +6,30 @@ import UserModal from "~/components/UserModal";
 import SearchFilter from "~/components/SearchFilter";
 
 export default function Users() {
-    const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+    const [user] = useState<any>(() => {
+        if (typeof window !== 'undefined') {
+            return JSON.parse(localStorage.getItem('user') || 'null');
+        }
+        return null;
+    });
 
-    const [user] = useState<any>(cachedUser);
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
-    const [isAdmin, setIsAdmin] = useState(cachedUser?.role === 'admin');
+    const [isAuthenticated, setIsAuthenticated] = useState(!!user);
+    const [isAdmin, setIsAdmin] = useState(user?.role === 'admin');
     const [searchTerm, setSearchTerm] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const modalRef = useRef<HTMLDialogElement>(null);
     const [editingUser, setEditingUser] = useState<any>(null);
 
     useEffect(() => {
-        if (!cachedUser) {
+        if (!user) {
             setIsAuthenticated(false);
             setLoading(false);
             return;
         }
 
-        if (cachedUser.role !== 'admin') {
+        if (user.role !== 'admin') {
             setIsAdmin(false);
             setLoading(false);
             return;
@@ -38,6 +42,7 @@ export default function Users() {
                 const res = await fetch(`${API_URL}?path=/users`, {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
+                    credentials: "include",
                 });
 
                 if (res.ok) {
@@ -52,7 +57,7 @@ export default function Users() {
         };
 
         fetchData();
-    }, [cachedUser]);
+    }, []);
 
     const refreshUsers = async () => {
         const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";

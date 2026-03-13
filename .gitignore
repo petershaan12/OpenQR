@@ -26,5 +26,12 @@ dist-ssr
 /build
 dist/
 
-.env
+.env*
+.env.local
+.claude
+.env.development.local
+.env.test.local
+.env.production.local
 dist/*
+
+.claude

@@ -15,12 +15,16 @@ import SearchFilter from "~/components/SearchFilter";
 
 export default function Dashboard() {
   // Get cached user immediately for fast render
-  const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+  const [user, setUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    }
+    return null;
+  });
 
-  const [user, setUser] = useState<any>(cachedUser);
   const [qrcodes, setQrcodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -132,7 +136,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // No cached user = not authenticated
-    if (!cachedUser) {
+    if (!user) {
       setIsAuthenticated(false);
       setLoading(false);
       return;
@@ -146,6 +150,7 @@ export default function Dashboard() {
         const qrcodesResponse = await fetch(`${API_URL}?path=/qrcodes`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
 
         if (qrcodesResponse.ok) {
@@ -159,6 +164,7 @@ export default function Dashboard() {
         fetch(`${API_URL}?path=/auth/me`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         }).then(res => {
           if (!res.ok) {
             // Session expired, logout

@@ -4,22 +4,26 @@ import { User, Mail, Shield, Check, AlertCircle, Save, Lock, Camera, X } from "l
 import DashboardLayout from "~/components/DashboardLayout";
 
 export default function Account() {
-    const cachedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+    const [user, setUser] = useState<any>(() => {
+        if (typeof window !== 'undefined') {
+            return JSON.parse(localStorage.getItem('user') || 'null');
+        }
+        return null;
+    });
 
-    const [user, setUser] = useState<any>(cachedUser);
     const [loading, setLoading] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(!!cachedUser);
-    const [name, setName] = useState(cachedUser?.name || "");
-    const [email, setEmail] = useState(cachedUser?.email || "");
-    const [avatar, setAvatar] = useState<string | null>(cachedUser?.avatar || null);
+    const [isAuthenticated, setIsAuthenticated] = useState(!!user);
+    const [name, setName] = useState(user?.name || "");
+    const [email, setEmail] = useState(user?.email || "");
+    const [avatar, setAvatar] = useState<string | null>(user?.avatar || null);
     const [submitMessage, setSubmitMessage] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        if (!cachedUser) {
+        if (!user) {
             setIsAuthenticated(false);
         }
-    }, [cachedUser]);
+    }, []);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
