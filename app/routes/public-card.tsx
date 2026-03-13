@@ -98,7 +98,8 @@ export default function PublicCard() {
                 // Determine if splash should show
                 const qrData = result.qr;
                 const hasVideoContent = qrData.welcome_video && qrData.welcome_video.length > 0;
-                const shouldShowSplash = qrData.enable_welcome !== 0 && (qrData.welcome_screen_time > 0 || hasVideoContent);
+                const enableWelcome = Number(qrData.enable_welcome) === 1;
+                const shouldShowSplash = enableWelcome && (qrData.welcome_screen_time > 0 || hasVideoContent);
 
                 setShowSplash(shouldShowSplash);
                 setData(result);
@@ -118,7 +119,7 @@ export default function PublicCard() {
         if (!data || !showSplash) return;
 
         // Only trigger timeout if there's NO video but splash is enabled
-        if (qr.enable_welcome !== 0 && qr.welcome_screen_time > 0 && !hasVideo) {
+        if (Number(qr.enable_welcome) === 1 && qr.welcome_screen_time > 0 && !hasVideo) {
             const timer = setTimeout(() => {
                 setShowSplash(false);
             }, qr.welcome_screen_time * 1000);

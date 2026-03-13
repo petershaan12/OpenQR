@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(powershell.exe -Command \"Remove-Item ''D:\\\\army-qrcode\\\\qr-subdomain-upload.zip'' -Force; Compress-Archive -Path ''D:\\\\army-qrcode\\\\upload-ready\\\\*'' -DestinationPath ''D:\\\\army-qrcode\\\\qr-subdomain-upload.zip''\")"
     ]
   }
 }
