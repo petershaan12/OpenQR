@@ -2,30 +2,38 @@ import { compressImage } from './imageUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
 
-export async function uploadImage(base64Image: string): Promise<string> {
+export async function uploadMedia(base64Data: string): Promise<string> {
   // If it's already a URL (not base64), return as-is
-  if (!base64Image.startsWith('data:image')) {
-    return base64Image;
+  if (!base64Data.startsWith('data:')) {
+    return base64Data;
   }
 
-  // Compress image to max 800px and 80% quality (usually < 100KB)
-  const compressed = await compressImage(base64Image, 800, 0.8);
+  const isVideo = base64Data.startsWith('data:video');
+  let dataToUpload = base64Data;
+
+  // Only compress images, not videos
+  if (!isVideo && base64Data.startsWith('data:image')) {
+    dataToUpload = await compressImage(base64Data, 800, 0.8);
+  }
 
   const response = await fetch(`${API_URL}?path=/upload/base64`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ image: compressed }),
+    body: JSON.stringify({ image: dataToUpload }),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Upload failed' }));
-    throw new Error(error.error || 'Failed to upload image');
+    throw new Error(error.error || 'Failed to upload file');
   }
 
   const data = await response.json();
   return data.url;
 }
+
+// Alias for backward compatibility
+export const uploadImage = uploadMedia;
 
 export async function createQRCode(formData: any): Promise<any> {
   // Upload image first if it's base64

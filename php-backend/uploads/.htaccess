@@ -1,16 +1,16 @@
-# Allow direct access to images
+# Allow direct access to images and videos
 <IfModule mod_rewrite.c>
     RewriteEngine Off
 </IfModule>
 
-# Only allow image files
-<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+# Allow image and video files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$">
     Order Allow,Deny
     Allow from all
 </FilesMatch>
 
 # Block all other files
-<FilesMatch "^(?!.*\.(jpg|jpeg|png|gif|webp)$)">
+<FilesMatch "^(?!.*\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$)">
     Order Deny,Allow
     Deny from all
 </FilesMatch>

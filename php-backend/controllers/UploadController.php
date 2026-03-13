@@ -5,8 +5,10 @@ require_once dirname(__DIR__) . '/helpers/response.php';
 
 class UploadController {
     private $uploadDir;
-    private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    private $maxSize = 10 * 1024 * 1024; // 10MB
+    private $allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    private $allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+    private $maxImageSize = 10 * 1024 * 1024; // 10MB
+    private $maxVideoSize = 50 * 1024 * 1024; // 50MB
 
     public function __construct() {
         $this->uploadDir = dirname(__DIR__) . '/uploads/';
@@ -37,18 +39,24 @@ class UploadController {
         $mimeType = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
-        if (!in_array($mimeType, $this->allowedTypes)) {
-            sendErrorResponse('Invalid file type. Allowed: JPG, PNG, GIF, WEBP', 400);
+        $isImage = in_array($mimeType, $this->allowedImageTypes);
+        $isVideo = in_array($mimeType, $this->allowedVideoTypes);
+
+        if (!$isImage && !$isVideo) {
+            sendErrorResponse('Invalid file type. Allowed: JPG, PNG, GIF, WEBP, MP4, WEBM, MOV, AVI', 400);
         }
 
-        // Validate file size
-        if ($file['size'] > $this->maxSize) {
-            sendErrorResponse('File too large. Max size: 10MB', 400);
+        // Validate file size based on type
+        $maxSize = $isVideo ? $this->maxVideoSize : $this->maxImageSize;
+        if ($file['size'] > $maxSize) {
+            $maxMB = $maxSize / (1024 * 1024);
+            sendErrorResponse("File too large. Max size: {$maxMB}MB", 400);
         }
 
         // Generate unique filename
         $extension = $this->getExtension($mimeType);
-        $filename = uniqid('img_') . '_' . time() . '.' . $extension;
+        $prefix = $isVideo ? 'vid_' : 'img_';
+        $filename = uniqid($prefix) . '_' . time() . '.' . $extension;
         $filepath = $this->uploadDir . $filename;
 
         // Move uploaded file
@@ -58,12 +66,13 @@ class UploadController {
 
         // Generate URL
         $baseUrl = $this->getBaseUrl();
-        $imageUrl = $baseUrl . '/php-backend/uploads/' . $filename;
+        $fileUrl = $baseUrl . '/php-backend/uploads/' . $filename;
 
         sendJsonResponse([
             'success' => true,
-            'url' => $imageUrl,
-            'filename' => $filename
+            'url' => $fileUrl,
+            'filename' => $filename,
+            'type' => $isVideo ? 'video' : 'image'
         ]);
     }
 
@@ -80,44 +89,56 @@ class UploadController {
             sendErrorResponse('No image data provided', 400);
         }
 
-        $imageData = $input['image'];
+        $mediaData = $input['image'];
+        $isVideo = false;
 
-        // Parse base64 data
-        if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $matches)) {
+        // Parse base64 data (image or video)
+        if (preg_match('/^data:image\/(\w+);base64,/', $mediaData, $matches)) {
             $extension = $matches[1];
-            $imageData = substr($imageData, strpos($imageData, ',') + 1);
+            $mediaData = substr($mediaData, strpos($mediaData, ',') + 1);
+        } elseif (preg_match('/^data:video\/(\w+);base64,/', $mediaData, $matches)) {
+            $extension = $matches[1];
+            $mediaData = substr($mediaData, strpos($mediaData, ',') + 1);
+            $isVideo = true;
+            // Map video extensions
+            if ($extension === 'quicktime') $extension = 'mov';
+            if ($extension === 'x-msvideo') $extension = 'avi';
         } else {
-            sendErrorResponse('Invalid base64 image format', 400);
+            sendErrorResponse('Invalid base64 format. Allowed: images (JPG, PNG, GIF, WEBP) and videos (MP4, WEBM, MOV)', 400);
         }
 
         // Decode base64
-        $decodedImage = base64_decode($imageData);
-        if ($decodedImage === false) {
-            sendErrorResponse('Failed to decode base64 image', 400);
+        $decodedMedia = base64_decode($mediaData);
+        if ($decodedMedia === false) {
+            sendErrorResponse('Failed to decode base64 data', 400);
         }
 
-        // Validate size (5MB max)
-        if (strlen($decodedImage) > $this->maxSize) {
-            sendErrorResponse('Image too large. Max size: 10MB', 400);
+        // Validate size based on type
+        $maxSize = $isVideo ? $this->maxVideoSize : $this->maxImageSize;
+        if (strlen($decodedMedia) > $maxSize) {
+            $maxMB = $maxSize / (1024 * 1024);
+            sendErrorResponse("File too large. Max size: {$maxMB}MB", 400);
         }
 
         // Generate unique filename
-        $filename = uniqid('img_') . '_' . time() . '.' . $extension;
+        $prefix = $isVideo ? 'vid_' : 'img_';
+        $filename = uniqid($prefix) . '_' . time() . '.' . $extension;
         $filepath = $this->uploadDir . $filename;
 
         // Save file
-        if (file_put_contents($filepath, $decodedImage) === false) {
-            sendErrorResponse('Failed to save image', 500);
+        if (file_put_contents($filepath, $decodedMedia) === false) {
+            sendErrorResponse('Failed to save file', 500);
         }
 
         // Generate URL
         $baseUrl = $this->getBaseUrl();
-        $imageUrl = $baseUrl . '/php-backend/uploads/' . $filename;
+        $fileUrl = $baseUrl . '/php-backend/uploads/' . $filename;
 
         sendJsonResponse([
             'success' => true,
-            'url' => $imageUrl,
-            'filename' => $filename
+            'url' => $fileUrl,
+            'filename' => $filename,
+            'type' => $isVideo ? 'video' : 'image'
         ]);
     }
 
@@ -149,9 +170,13 @@ class UploadController {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
             'image/gif' => 'gif',
-            'image/webp' => 'webp'
+            'image/webp' => 'webp',
+            'video/mp4' => 'mp4',
+            'video/webm' => 'webm',
+            'video/quicktime' => 'mov',
+            'video/x-msvideo' => 'avi'
         ];
-        return $map[$mimeType] ?? 'jpg';
+        return $map[$mimeType] ?? 'bin';
     }
 
     private function getBaseUrl() {

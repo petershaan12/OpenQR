@@ -1,5 +1,6 @@
 import { Palette, Type, Plus, X, Save, Edit2, Loader2 } from "lucide-react";
 import { RefObject, useState } from "react";
+import { uploadMedia } from "../utils/api";
 
 export default function ThemeModal({
     modalRef,
@@ -32,23 +33,47 @@ export default function ThemeModal({
 }) {
     const [submitting, setSubmitting] = useState(false);
 
+    const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSubmitting(true);
 
+        // Get form data BEFORE any await calls (e.currentTarget becomes invalid after await)
         const formData = new FormData(e.currentTarget);
-        const data = {
-            id: editingTheme?.id,
-            name: formData.get('name') as string,
-            primary_color: formData.get('primary_color') as string,
-            legal_info: formData.get('legal_info') as string,
-            welcome_screen_time: parseInt(formData.get('welcome_screen_time') as string) || 5,
-            enable_welcome: enableWelcome,
-            welcome_image: welcomeImage || null,
-            welcome_video: welcomeVideo || null,
-        };
+        const name = formData.get('name') as string;
+        const primary_color = formData.get('primary_color') as string;
+        const legal_info = formData.get('legal_info') as string;
+        const welcome_screen_time = parseInt(formData.get('welcome_screen_time') as string) || 5;
 
         try {
+            // Upload media files first if they are base64
+            let imageUrl = welcomeImage;
+            let videoUrl = welcomeVideo;
+
+            if (welcomeImage?.startsWith('data:')) {
+                setUploadProgress('Uploading image...');
+                imageUrl = await uploadMedia(welcomeImage);
+            }
+
+            if (welcomeVideo?.startsWith('data:')) {
+                setUploadProgress('Uploading video...');
+                videoUrl = await uploadMedia(welcomeVideo);
+            }
+
+            setUploadProgress(null);
+
+            const data = {
+                id: editingTheme?.id,
+                name,
+                primary_color,
+                legal_info,
+                welcome_screen_time,
+                enable_welcome: enableWelcome,
+                welcome_image: imageUrl || null,
+                welcome_video: videoUrl || null,
+            };
+
             const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
             const token = localStorage.getItem('token');
 
@@ -69,9 +94,10 @@ export default function ThemeModal({
             onSave?.();
         } catch (error) {
             console.error("Error saving theme:", error);
-            alert("Failed to save theme");
+            alert(error instanceof Error ? error.message : "Failed to save theme");
         } finally {
             setSubmitting(false);
+            setUploadProgress(null);
         }
     };
 
@@ -232,7 +258,7 @@ export default function ThemeModal({
                             ) : (
                                 editingTheme ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />
                             )}
-                            {submitting ? (editingTheme ? "Updating..." : "Creating...") : (editingTheme ? "Update Theme" : "Create Theme")}
+                            {submitting ? (uploadProgress || (editingTheme ? "Updating..." : "Creating...")) : (editingTheme ? "Update Theme" : "Create Theme")}
                         </button>
                     </div>
                 </form>
