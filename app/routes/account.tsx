@@ -96,7 +96,7 @@ export default function Account() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-base-100">
-                <span className="loading loading-spinner loading-lg text-red-600"></span>
+                <span className="loading loading-spinner loading-lg text-primary"></span>
             </div>
         );
     }

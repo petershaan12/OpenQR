@@ -65,7 +65,7 @@ export default function CreateQRCode() {
               localStorage.setItem('user', JSON.stringify(userData));
             });
           }
-        }).catch(() => {});
+        }).catch(() => { });
 
       } catch (error) {
         console.error("Error loading themes:", error);
@@ -104,17 +104,17 @@ export default function CreateQRCode() {
     >
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <span className="loading loading-spinner loading-lg text-red-600"></span>
+          <span className="loading loading-spinner loading-lg text-primary"></span>
         </div>
       ) : (
-      <QRCodeForm
-        mode="create"
-        themes={themes}
-        user={user}
-        onSubmit={handleSubmit}
-        submitting={submitting}
-        submitResult={submitResult}
-      />
+        <QRCodeForm
+          mode="create"
+          themes={themes}
+          user={user}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+          submitResult={submitResult}
+        />
       )}
     </DashboardLayout>
   );

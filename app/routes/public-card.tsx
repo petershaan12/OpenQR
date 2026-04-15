@@ -148,7 +148,7 @@ export default function PublicCard() {
     if (loading) {
         return (
             <div className="min-h-screen bg-base-100 flex items-center justify-center">
-                <span className="loading loading-spinner loading-lg text-red-600"></span>
+                <span className="loading loading-spinner loading-lg text-primary"></span>
             </div>
         );
     }

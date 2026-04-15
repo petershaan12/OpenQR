@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-base-content">
-                                Army<span className="text-red-600">QR</span>
+                                Army<span className="text-primary">QR</span>
                             </h1>
                             <p className="text-[11px] text-base-content/40 -mt-0.5 whitespace-nowrap">
                                 Management System
@@ -84,11 +84,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                                 to={item.path}
                                 onClick={() => { if (window.innerWidth < 1024) toggleSidebar(); }}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(item.path)
-                                    ? "bg-red-600/10 text-red-600 border-l-4 border-red-600 rounded-l-none"
+                                    ? "bg-red-600/10 text-primary border-l-4 border-red-600 rounded-l-none"
                                     : "text-base-content/60 hover:bg-base-200 hover:text-base-content"
                                     }`}
                             >
-                                <Icon className={`w-4 h-4 shrink-0 ${isActive(item.path) ? "text-red-600" : "text-base-content/40"}`} />
+                                <Icon className={`w-4 h-4 shrink-0 ${isActive(item.path) ? "text-primary" : "text-base-content/40"}`} />
                                 <span className="whitespace-nowrap">{item.label}</span>
                             </Link>
                         );
@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                         <span>Hide Sidebar</span>
                     </button>
 
-                    <button type="button" onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/60 hover:bg-red-600/10 hover:text-red-600 w-full transition-all">
+                    <button type="button" onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/60 hover:bg-red-600/10 hover:text-primary w-full transition-all">
                         <LogOut className="w-4 h-4" />
                         <span>Logout</span>
                     </button>

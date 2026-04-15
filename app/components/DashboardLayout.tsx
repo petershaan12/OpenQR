@@ -93,7 +93,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, subt
                                 <img src={user.avatar} className="w-8 h-8 rounded-full object-cover shadow-sm group-hover:ring-2 ring-primary/50 transition-all border border-base-300" alt="Avatar" />
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors border border-red-200">
-                                    <span className="text-red-600 font-semibold text-sm uppercase">
+                                    <span className="text-primary font-semibold text-sm uppercase">
                                         {user?.name?.charAt(0) || "A"}
                                     </span>
                                 </div>

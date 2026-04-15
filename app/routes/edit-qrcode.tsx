@@ -98,18 +98,18 @@ export default function EditQRCode() {
     >
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <span className="loading loading-spinner loading-lg text-red-600"></span>
+          <span className="loading loading-spinner loading-lg text-primary"></span>
         </div>
       ) : (
-      <QRCodeForm
-        mode="edit"
-        themes={themes}
-        initialQRCode={qrcode}
-        user={user}
-        onSubmit={handleSubmit}
-        submitting={submitting}
-        submitResult={submitResult}
-      />
+        <QRCodeForm
+          mode="edit"
+          themes={themes}
+          initialQRCode={qrcode}
+          user={user}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+          submitResult={submitResult}
+        />
       )}
     </DashboardLayout>
   );
