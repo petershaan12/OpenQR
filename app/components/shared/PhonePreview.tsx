@@ -84,7 +84,7 @@ const PhonePreview: React.FC<PhonePreviewProps> = ({
                         <h2 className="text-gray-900 text-sm font-bold leading-tight">
                             {displayName}
                         </h2>
-                        <p className="text-gray-400 text-sm mt-0" style={{ fontFamily: "'MonteCarlo', cursive", color: primaryColor }}>
+                        <p className="text-gray-400 text-sm mt-0" style={{ color: primaryColor }}>
                             {title || "Position Title"}
                         </p>
                     </div>

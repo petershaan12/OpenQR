@@ -24,20 +24,25 @@ export default function PublicCard() {
     const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
     const primaryColor = qr.primary_color || '#DC2626';
 
-    const socialLinks = useMemo(() => {
+    const socialLinks = useMemo<Record<string, string>>(() => {
         if (!qr.social_network) return {};
         try {
             if (qr.social_network.startsWith('{') || qr.social_network.startsWith('[')) {
-                return JSON.parse(qr.social_network);
+                const parsed = JSON.parse(qr.social_network);
+                if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                    return Object.fromEntries(
+                        Object.entries(parsed).map(([key, value]) => [key, String(value ?? "")])
+                    );
+                }
             }
-            return { "Website": qr.social_network };
+            return { Website: String(qr.social_network) };
         } catch (e) {
-            return { "Website": qr.social_network || "" };
+            return { Website: String(qr.social_network || "") };
         }
     }, [qr.social_network]);
 
     const activeSocialLinks = useMemo(() =>
-        Object.entries(socialLinks).filter(([_, val]) => val),
+        Object.entries(socialLinks).filter(([_, val]) => Boolean(val)),
         [socialLinks]
     );
 
@@ -94,7 +99,7 @@ export default function PublicCard() {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                }).catch(() => {}); // Fire and forget
+                }).catch(() => { }); // Fire and forget
 
                 // Determine if splash should show
                 const qrData = result.qr;
@@ -166,7 +171,7 @@ export default function PublicCard() {
                 <div className="flex-1 flex flex-col overflow-y-auto">
 
                     {/* Hero Photo */}
-                    <div className="relative w-full aspect-[4/3] overflow-hidden">
+                    <div className="relative w-full aspect-4/3 overflow-hidden">
                         {qr.profile_image ? (
                             <img
                                 src={qr.profile_image}
@@ -178,7 +183,7 @@ export default function PublicCard() {
                                 <User className="w-24 h-24" style={{ color: `${primaryColor}40` }} />
                             </div>
                         )}
-                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-white to-transparent" />
                     </div>
 
                     {/* Name & Title */}
@@ -186,7 +191,7 @@ export default function PublicCard() {
                         <h1 className="text-xl font-bold leading-tight">
                             {displayName}
                         </h1>
-                        <p className="text-gray-400 text-lg mt-0" style={{ fontFamily: "'MonteCarlo', cursive", color: primaryColor }}>
+                        <p className="text-gray-400 text-lg mt-0" style={{ color: primaryColor }}>
                             {qr.title || 'Title'}
                         </p>
                     </div>

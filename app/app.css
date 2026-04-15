@@ -7,9 +7,19 @@
   themes: light --default, dark;
 }
 
-:root {
+:root,
+[data-theme="light"] {
   --primary: #dc2626;
   --primary-focus: #b91c1c;
+  --color-primary: #dc2626;
+  --color-primary-content: #ffffff;
+}
+
+[data-theme="dark"] {
+  --primary: #dc2626;
+  --primary-focus: #b91c1c;
+  --color-primary: #dc2626;
+  --color-primary-content: #ffffff;
 }
 
 * {
