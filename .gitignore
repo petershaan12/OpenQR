@@ -35,3 +35,7 @@ dist/
 dist/*
 
 .claude
+
+# deployment
+deployment/
+qr-code-production.zip

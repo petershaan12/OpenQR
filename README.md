@@ -42,24 +42,55 @@ Output di folder `dist/`
 
 ## Deployment ke Shared Hosting
 
-### 1. Build
+### 1. Siapkan Konfigurasi Production
+
+Pastikan `.env` sudah berisi konfigurasi database hosting dan URL API berikut:
+
+```env
+VITE_API_URL="/php-backend/api.php"
+
+DB_HOST="localhost"
+DB_PORT="3306"
+DB_NAME="nama_database"
+DB_USER="user_database"
+DB_PASSWORD="password_database"
+```
+
+### 2. Build dan Buat ZIP
 
 ```bash
 npm run build
+
+# Gunakan nama folder lain jika folder deployment sudah ada
+mkdir deployment
+
+# Salin hasil build frontend dan backend
+cp -R dist/. deployment/
+cp -R php-backend deployment/
+
+# Gunakan .htaccess utama dan sertakan konfigurasi production
+cp .htaccess .env deployment/
+
+# Buat file qr-code-production.zip
+(cd deployment && zip -r ../qr-code-production.zip .)
 ```
 
-### 2. Upload Files
+### 3. Upload Files
 
-Upload ke hosting:
+Upload `qr-code-production.zip` ke hosting, lalu extract isinya langsung di `public_html`:
+
 ```
 public_html/
-├── assets/          # dari dist/assets/
-├── php-backend/     # folder php-backend
-├── index.html       # dari dist/index.html
-└── .htaccess        # dari public/.htaccess
+├── .env
+├── .htaccess
+├── assets/
+├── php-backend/
+└── index.html
 ```
 
-### 3. Setup Database
+Jangan upload folder `deployment` sebagai folder pembungkus. File `index.html` harus berada langsung di `public_html`.
+
+### 4. Setup Database
 
 ```sql
 -- Users
@@ -119,17 +150,6 @@ CREATE TABLE qrcode_phones (
 -- Default admin (password: password)
 INSERT INTO users (name, email, password, role) VALUES
 ('Admin', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
-```
-
-### 4. Konfigurasi Database
-
-Edit `php-backend/config/database.php`:
-
-```php
-private $host = 'localhost';
-private $dbname = 'nama_database';
-private $username = 'user_database';
-private $password = 'password_database';
 ```
 
 ## API Endpoints
