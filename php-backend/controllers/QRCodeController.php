@@ -50,7 +50,7 @@ class QRCodeController {
 
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $requiredFields = ['name', 'surname', 'title', 'email', 'social_network', 'theme_id', 'status', 'phones'];
+        $requiredFields = ['name', 'surname', 'title', 'social_network', 'theme_id', 'status', 'phones'];
         validateInput($input, $requiredFields);
 
         $input['user_id'] = getCurrentUserId();

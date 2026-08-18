@@ -1,5 +1,5 @@
 import { Palette, Type, Plus, X, Save, Edit2, Loader2 } from "lucide-react";
-import { RefObject, useState } from "react";
+import { RefObject, useEffect, useState } from "react";
 import { uploadMedia } from "../utils/api";
 
 export default function ThemeModal({
@@ -34,10 +34,18 @@ export default function ThemeModal({
     const [submitting, setSubmitting] = useState(false);
 
     const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!errorMessage) return;
+        const timer = setTimeout(() => setErrorMessage(null), 3000);
+        return () => clearTimeout(timer);
+    }, [errorMessage]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSubmitting(true);
+        setErrorMessage(null);
 
         // Get form data BEFORE any await calls (e.currentTarget becomes invalid after await)
         const formData = new FormData(e.currentTarget);
@@ -86,15 +94,14 @@ export default function ThemeModal({
                 body: JSON.stringify(data),
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to save theme");
-            }
+            const result = await response.json().catch(() => null);
+            if (!response.ok) throw new Error(result?.error || "Failed to save theme");
 
             modalRef.current?.close();
             onSave?.();
         } catch (error) {
             console.error("Error saving theme:", error);
-            alert(error instanceof Error ? error.message : "Failed to save theme");
+            setErrorMessage(error instanceof Error ? error.message : "Failed to save theme");
         } finally {
             setSubmitting(false);
             setUploadProgress(null);
@@ -103,6 +110,13 @@ export default function ThemeModal({
 
     return (
         <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
+            {errorMessage && (
+                <div className="toast toast-top toast-center z-[100]">
+                    <div className="alert alert-error text-white font-bold shadow-lg">
+                        <span>{errorMessage}</span>
+                    </div>
+                </div>
+            )}
             <div className="modal-box p-0 overflow-hidden border border-base-300 shadow-2xl rounded-lg bg-base-100">
                 <div className="px-6 py-4 flex items-center justify-between bg-base-200/50">
                     <div className="flex items-center gap-2">
@@ -150,13 +164,14 @@ export default function ThemeModal({
 
                     <div className="form-control">
                         <label className="label py-1">
-                            <span className="label-text font-bold text-base-content/70">Legal Information</span>
+                            <span className="label-text font-bold text-base-content/70">Legal Information <span className="text-error font-extrabold ml-1">*</span></span>
                         </label>
                         <textarea
                             name="legal_info"
                             className="textarea textarea-bordered font-medium min-h-[80px] w-full flex"
                             defaultValue={editingTheme?.legal_info || ""}
                             placeholder="Copyright © 2026. All rights reserved."
+                            required
                         ></textarea>
                     </div>
                     <div className="form-control">

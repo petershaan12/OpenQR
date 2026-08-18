@@ -49,7 +49,7 @@ class QRCodeService {
             $data['name'],
             $data['surname'],
             $data['title'],
-            $data['email'],
+            !empty(trim($data['email'] ?? '')) ? trim($data['email']) : null,
             $data['profile_image'],
             $data['social_network'],
             $data['theme_id'],
@@ -158,9 +158,9 @@ class QRCodeService {
             $fields[] = "title = ?";
             $values[] = $data['title'];
         }
-        if (isset($data['email'])) {
+        if (array_key_exists('email', $data)) {
             $fields[] = "email = ?";
-            $values[] = $data['email'];
+            $values[] = !empty(trim($data['email'] ?? '')) ? trim($data['email']) : null;
         }
         if (isset($data['profile_image'])) {
             $fields[] = "profile_image = ?";

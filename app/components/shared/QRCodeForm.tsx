@@ -50,21 +50,21 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
     const [error, setError] = useState<string | null>(null);
 
     const isSubmitting = submitting;
-    const [showToast, setShowToast] = useState(false);
+    const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
     const [lastSavedData, setLastSavedData] = useState<any>(initialQRCode);
 
     useEffect(() => {
-        if (showToast) {
-            const timer = setTimeout(() => setShowToast(false), 3000);
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
             return () => clearTimeout(timer);
         }
-    }, [showToast]);
+    }, [toast]);
 
     const copyToClipboard = (text: string) => {
         if (typeof window !== 'undefined') {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
-                    setShowToast(true);
+                    setToast({ message: "Link copied to clipboard!" });
                 }).catch(() => {
                     // Fallback
                     const textArea = document.createElement("textarea");
@@ -73,7 +73,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    setShowToast(true);
+                    setToast({ message: "Link copied to clipboard!" });
                 });
             } else {
                 // Fallback for older browsers or non-secure contexts
@@ -83,7 +83,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
                 textArea.select();
                 try {
                     document.execCommand('copy');
-                    setShowToast(true);
+                    setToast({ message: "Link copied to clipboard!" });
                 } catch (err) {
                     console.error('Fallback: Oops, unable to copy', err);
                 }
@@ -121,8 +121,10 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
 
     // Effect to handle submit success
     useEffect(() => {
-        if (submitResult?.success) {
-            setShowToast(true);
+        if (submitResult?.error) {
+            setToast({ message: submitResult.error, error: true });
+        } else if (submitResult?.success) {
+            setToast({ message: "Changes saved successfully!" });
             // On success, update lastSavedData to current state
             setLastSavedData({
                 ...formData,
@@ -203,11 +205,11 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
     return (
         <div className="flex flex-col lg:flex-row gap-8 items-start relative">
             {/* Toast Notification */}
-            {showToast && (
+            {toast && (
                 <div className="toast toast-top toast-center z-[100] animate-in slide-in-from-top duration-300">
-                    <div className="alert alert-success shadow-lg border-none bg-success text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
-                        <Check className="w-5 h-5" />
-                        <span>{submitResult?.success ? "Changes saved successfully!" : "Link copied to clipboard!"}</span>
+                    <div className={`alert ${toast.error ? 'alert-error' : 'alert-success'} shadow-lg border-none text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2`}>
+                        {toast.error ? <AlertCircle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+                        <span>{toast.message}</span>
                     </div>
                 </div>
             )}

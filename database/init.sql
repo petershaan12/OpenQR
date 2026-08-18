@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS `qrcode_phones` (
 
 -- =============================================
 -- Default Admin User
--- Email: admin@armysecurityguard.co.id
--- Password: admin123 (hashed)
+-- Email: admin@armysecurity.com
+-- Password: password (hashed)
 -- =============================================
 INSERT INTO `users` (`name`, `email`, `password`, `role`) VALUES
 ('Admin', 'admin@armysecurity.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
