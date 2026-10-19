@@ -2,7 +2,17 @@ import { Form, useActionData, useNavigation, redirect } from "react-router";
 import { Mail, Lock, LogIn, QrCode, AlertCircle, Loader2 } from "lucide-react";
 import bcrypt from "bcryptjs";
 import { findUserByEmail } from "~/services";
-import { getUserFromCookie, createSessionCookie, clearSessionCookie } from "~/.server/auth";
+import {
+  getUserFromCookie,
+  createSessionCookie,
+  clearSessionCookie,
+  assertBodySize,
+  isLoginLocked,
+  recordLoginFailure,
+  clearLoginFailures,
+  DEFAULT_PASSWORD,
+  mustChangePasswordCookie,
+} from "~/.server/auth";
 
 interface ActionData {
   error?: string;
@@ -17,6 +27,7 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export async function action({ request }: { request: Request }) {
+  assertBodySize(request);
   const formData = await request.formData();
   const action = formData.get("_action");
 
@@ -33,19 +44,23 @@ export async function action({ request }: { request: Request }) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
+  if (isLoginLocked(email || "")) {
+    return { error: "Too many failed attempts. Try again in 15 minutes." };
+  }
+
   const user = await findUserByEmail(email);
 
   if (!user || !bcrypt.compareSync(password, user.password)) {
+    recordLoginFailure(email || "");
     return { error: "Invalid email or password" };
   }
+  clearLoginFailures(email);
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      "Set-Cookie": createSessionCookie(user.id),
-      Location: "/dashboard",
-    },
-  });
+  const mustChange = password === DEFAULT_PASSWORD;
+  const headers = new Headers({ Location: mustChange ? "/account" : "/dashboard" });
+  headers.append("Set-Cookie", createSessionCookie(user.id));
+  headers.append("Set-Cookie", mustChangePasswordCookie(mustChange));
+  return new Response(null, { status: 302, headers });
 }
 
 export default function Login() {

@@ -73,7 +73,7 @@ Great for companies, teams, events, or anyone who wants their own Linktree-style
    | --- | --- |
    | `MYSQL_ROOT_PASSWORD` | MySQL root password (used by the app too) |
    | `MYSQL_DATABASE` | Database name |
-   | `SESSION_SECRET` | Random string for signing session cookies (`openssl rand -hex 32`) |
+   | `SESSION_SECRET` | Random string for signing session cookies (`openssl rand -hex 32`) — **required** |
    | `MYSQL_PORT` | MySQL port exposed on host |
    | `APP_PORT` | App port inside the container |
    | `APP_PUBLIC_PORT` | App port exposed on host |
@@ -92,7 +92,7 @@ Great for companies, teams, events, or anyone who wants their own Linktree-style
    npm run dev
    ```
 
-   Open [http://localhost:5173](http://localhost:5173) and log in with the seeded admin account: **`admin@example.com` / `password`**. Change the email and password right away after first login.
+   Open [http://localhost:5173](http://localhost:5173) and log in with the seeded admin account: **`admin@example.com` / `password`**. You will be asked to set a new password on first login. Logins are limited to 5 failed attempts per 15 minutes.
 
 5. **Deploy with Docker**:
 
@@ -167,7 +167,7 @@ Don't have a VPS or Docker? The [`php`](https://github.com/petershaan12/qr-code/
 
 6. **Create the database**: in cPanel → *MySQL Databases*, create a database + user, then open *phpMyAdmin* → *Import* → `database/init.sql`.
 
-7. **Done!** Open your domain and log in with `admin@example.com` / `password`. Change the password right away.
+7. **Done!** Open your domain and log in with `admin@example.com` / `password`. You will be asked to set a new password on first login.
 
 Full details (SQL schema, API endpoints) are in the [`php` branch README](https://github.com/petershaan12/qr-code/tree/php#readme).
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useLoaderData, Form, useNavigate, useActionData } from "react-router";
+import { useLoaderData, Form, useNavigate, useActionData, data } from "react-router";
 import { User, Mail, Shield, Check, AlertCircle, Save, Lock, Camera, Plus, Trash2, Upload, X } from "lucide-react";
-import { requireUser } from "~/.server/auth";
+import { requireUser, mustChangePassword, mustChangePasswordCookie, DEFAULT_PASSWORD } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
 import bcrypt from "bcryptjs";
 import { getUserById, findUserByEmail, updateUser, createNotification, getUserNotifications } from "~/services";
@@ -10,7 +10,7 @@ export async function loader({ request }: { request: Request }) {
     const userId = await requireUser(request);
     const user = await getUserById(userId);
     const notifications = await getUserNotifications(userId);
-    return { user, notifications };
+    return { user, notifications, mustChange: mustChangePassword(request) };
 }
 
 export async function action({ request }: { request: Request }) {
@@ -43,6 +43,9 @@ export async function action({ request }: { request: Request }) {
         const newPassword = formData.get("new_password") as string;
         const confirmPassword = formData.get("confirm_password") as string;
 
+        if (newPassword === DEFAULT_PASSWORD || (newPassword && newPassword.length < 8)) {
+            return { error: "Choose a password with at least 8 characters (not the default)" };
+        }
         if (newPassword && newPassword === confirmPassword) {
             await updateUser(userId, { password: newPassword });
             await createNotification({
@@ -51,7 +54,10 @@ export async function action({ request }: { request: Request }) {
                 message: "Your account password has been changed successfully.",
                 type: "success"
             });
-            return { success: true, message: "Password updated successfully" };
+            return data(
+                { success: true, message: "Password updated successfully" },
+                { headers: { "Set-Cookie": mustChangePasswordCookie(false) } },
+            );
         }
         return { error: "Passwords do not match" };
     }
@@ -60,7 +66,7 @@ export async function action({ request }: { request: Request }) {
 }
 
 export default function Account() {
-    const { user, notifications } = useLoaderData<any>();
+    const { user, notifications, mustChange } = useLoaderData<any>();
     const actionData = useActionData<any>();
     const [name, setName] = useState(user.name || "");
     const [email, setEmail] = useState(user.email || "");
@@ -84,6 +90,12 @@ export default function Account() {
         >
             <div className="max-w-2xl space-y-6 pb-10">
                 {/* Status Messages */}
+                {mustChange && !actionData?.success && (
+                    <div className="alert alert-warning rounded-lg shadow-sm font-bold">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>You are using the default password. Please change it before continuing.</span>
+                    </div>
+                )}
                 {actionData?.success && (
                     <div className="alert alert-success rounded-lg shadow-sm font-bold text-white">
                         <Check className="w-5 h-5" />
