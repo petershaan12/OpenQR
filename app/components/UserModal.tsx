@@ -112,7 +112,7 @@ export default function UserModal({
                         <form method="dialog">
                             <button className="btn btn-ghost font-bold">Cancel</button>
                         </form>
-                        <button type="submit" disabled={submitting} className="btn-army px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <button type="submit" disabled={submitting} className="btn-brand px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
                             {submitting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (

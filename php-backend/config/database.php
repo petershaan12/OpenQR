@@ -3,7 +3,7 @@
 class Database {
     private $host = 'localhost';
     private $port = 3306;
-    private $dbname = 'army_qrcode';
+    private $dbname = 'qrcard';
     private $username = 'root';
     private $password = '';
     private $pdo;

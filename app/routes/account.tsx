@@ -171,7 +171,7 @@ export default function Account() {
                         </div>
 
                         <div className="pt-2">
-                            <button type="submit" disabled={submitting} className="btn-army px-6 gap-2">
+                            <button type="submit" disabled={submitting} className="btn-brand px-6 gap-2">
                                 {submitting ? <span className="loading loading-spinner loading-xs"></span> : <Save className="w-4 h-4" />}
                                 Update Profile
                             </button>

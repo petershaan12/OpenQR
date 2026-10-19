@@ -1,4 +1,4 @@
--- Army QR Code Database Schema
+-- OpenQRCard Database Schema
 -- Import this file to phpMyAdmin
 
 -- =============================================
@@ -65,14 +65,14 @@ CREATE TABLE IF NOT EXISTS `qrcode_phones` (
 
 -- =============================================
 -- Default Admin User
--- Email: admin@armysecurity.com
+-- Email: admin@example.com
 -- Password: password (hashed)
 -- =============================================
 INSERT INTO `users` (`name`, `email`, `password`, `role`) VALUES
-('Admin', 'admin@armysecurity.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+('Admin', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 
 -- =============================================
 -- Default Theme
 -- =============================================
 INSERT INTO `themes` (`name`, `primary_color`, `legal_info`, `welcome_screen_time`, `enable_welcome`, `user_id`) VALUES
-('Default Theme', '#dc2626', 'Army Security Guard - Professional Security Services', 5, 1, NULL);
+('Default Theme', '#dc2626', '© 2026 Your Company. All Rights Reserved.', 5, 1, NULL);

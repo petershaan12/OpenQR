@@ -100,7 +100,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, subt
                             )}
                             <div className="hidden md:block text-left">
                                 <p className="text-sm font-bold text-base-content/90 leading-tight">{user?.name || "Admin"}</p>
-                                <p className="text-xs text-base-content/60 font-medium">{user?.email || "admin@armysecurity.com"}</p>
+                                <p className="text-xs text-base-content/60 font-medium">{user?.email || "admin@example.com"}</p>
                             </div>
                         </Link>
                     </div>

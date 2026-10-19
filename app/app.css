@@ -83,7 +83,7 @@ textarea:focus {
 }
 
 /* Buttons */
-.btn-army {
+.btn-brand {
   background-color: var(--primary);
   color: white;
   border: none;
@@ -100,16 +100,16 @@ textarea:focus {
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
 }
-.btn-army:hover {
+.btn-brand:hover {
   background-color: var(--primary-focus);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
   transform: translateY(-1px);
 }
-.btn-army:active {
+.btn-brand:active {
   transform: translateY(0);
 }
 
-.btn-army-outline {
+.btn-brand-outline {
   background-color: transparent;
   color: var(--primary);
   border: 1.5px solid var(--primary);
@@ -123,7 +123,7 @@ textarea:focus {
   align-items: center;
   gap: 8px;
 }
-.btn-army-outline:hover {
+.btn-brand-outline:hover {
   background-color: var(--primary);
   color: white;
 }

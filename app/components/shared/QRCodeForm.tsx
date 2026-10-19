@@ -244,7 +244,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
                             <button
                                 type="button"
                                 onClick={handleNextStep}
-                                className="btn-army px-6"
+                                className="btn-brand px-6"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue"}
@@ -255,7 +255,7 @@ export default function QRCodeForm({ mode, themes, initialQRCode, user, onSubmit
                                 type="submit"
                                 name="_action"
                                 value={mode === 'create' ? "create_qrcode" : "update_qrcode"}
-                                className="btn-army px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="btn-brand px-6 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={isSubmitting || !isDirty}
                             >
                                 {isSubmitting ? (

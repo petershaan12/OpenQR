@@ -1,4 +1,4 @@
-# ArmyQRCode
+# OpenQRCard
 
 QR Code Generator untuk membuat digital business card dengan tema dan profil yang bisa dikustomisasi.
 
@@ -176,7 +176,7 @@ INSERT INTO users (name, email, password, role) VALUES
 ## Struktur Project
 
 ```
-army-qrcode/
+qr-code/
 ├── app/
 │   ├── components/     # React components
 │   ├── routes/         # Page components
