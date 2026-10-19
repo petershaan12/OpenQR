@@ -82,7 +82,7 @@ Great for companies, teams, events, or anyone who wants their own Linktree-style
 3. **Create the database**: import the schema (and optional seed data) from `database/init.sql`.
 
    ```bash
-   mysql -u root -p your_database < database/init.sql
+   mysql --default-character-set=utf8mb4 -u root -p your_database < database/init.sql
    ```
 
 4. **Run the project**:
@@ -97,7 +97,7 @@ Great for companies, teams, events, or anyone who wants their own Linktree-style
 
    ```bash
    docker compose up -d --build
-   docker exec -i qrcard_mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < database/init.sql
+   docker exec -i qrcard_mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < database/init.sql
    ```
 
    The app is now running on `http://localhost:3001` (or your `APP_PUBLIC_PORT`). Put it behind Nginx with HTTPS for production — see [DEPLOYMENT.md](DEPLOYMENT.md) for a full guide.
@@ -164,11 +164,7 @@ Don't have a VPS or Docker? The [`php`](https://github.com/petershaan12/qr-code/
    └── index.html
    ```
 
-   <img src="docs/screenshots/cpanel-extract.png" width="600">
-
 6. **Create the database**: in cPanel → *MySQL Databases*, create a database + user, then open *phpMyAdmin* → *Import* → `database/init.sql`.
-
-   <img src="docs/screenshots/phpmyadmin-import.png" width="600">
 
 7. **Done!** Open your domain and log in with `admin@example.com` / `password`. Change the password right away.
 
