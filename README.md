@@ -1,4 +1,5 @@
 <p align="center">
+  <img alt="OpenQRCard logo" src="public/logo.svg" width="100">
   <h1 align="center">OpenQRCard</h1>
   <p align="center">
     Made with ❤️ by <a href="https://github.com/petershaan12">Peter Shaan</a>.
