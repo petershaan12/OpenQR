@@ -4,6 +4,15 @@ import { createNotification } from "./notification.server";
 import { type QRCodeData, type PhoneData, type ThemeData } from "~/types";
 import { generateUniqueId } from "~/utils/ids";
 
+async function assertThemeAllowed(themeId: number, userId: number) {
+  if (!Number.isFinite(themeId)) return;
+  const [rows]: any = await getDb().query(
+    "SELECT id FROM themes WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+    [themeId, userId],
+  );
+  if (!rows.length) throw new Response("Invalid theme", { status: 400 });
+}
+
 /**
  * Get all QR codes for a user with their main phone
  */
@@ -39,6 +48,7 @@ export async function createQRCode(data: {
   unique_id?: string;
 }): Promise<QRCodeData> {
   const db = getDb();
+  await assertThemeAllowed(data.theme_id, data.user_id);
 
   // Generate unique ID or use provided one
   let uniqueId = data.unique_id || generateUniqueId(data.name, data.surname);
@@ -180,6 +190,13 @@ export async function updateQRCode(
   },
 ): Promise<void> {
   const db = getDb();
+
+  const [owned]: any = await db.query(
+    "SELECT id FROM qrcodes WHERE id = ? AND user_id = ?",
+    [qrId, userId],
+  );
+  if (!owned.length) throw new Response("Not found", { status: 404 });
+  await assertThemeAllowed(data.theme_id, userId);
 
   if (data.status) {
     await db.query(

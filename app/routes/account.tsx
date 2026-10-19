@@ -3,7 +3,8 @@ import { useLoaderData, Form, useNavigate, useActionData } from "react-router";
 import { User, Mail, Shield, Check, AlertCircle, Save, Lock, Camera, Plus, Trash2, Upload, X } from "lucide-react";
 import { requireUser } from "~/.server/auth";
 import DashboardLayout from "~/components/DashboardLayout";
-import { getUserById, updateUser, createNotification, getUserNotifications } from "~/services";
+import bcrypt from "bcryptjs";
+import { getUserById, findUserByEmail, updateUser, createNotification, getUserNotifications } from "~/services";
 
 export async function loader({ request }: { request: Request }) {
     const userId = await requireUser(request);
@@ -33,7 +34,12 @@ export async function action({ request }: { request: Request }) {
     }
 
     if (_action === "update_password") {
-        // Here you would normally verify current password and then update
+        const currentPassword = formData.get("current_password") as string;
+        const current = await getUserById(userId);
+        const account = current && (await findUserByEmail(current.email));
+        if (!account || !bcrypt.compareSync(currentPassword || "", account.password)) {
+            return { error: "Current password is incorrect" };
+        }
         const newPassword = formData.get("new_password") as string;
         const confirmPassword = formData.get("confirm_password") as string;
 
@@ -196,6 +202,15 @@ export default function Account() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-control md:col-span-2">
+                                <label className="label py-1">
+                                    <span className="label-text font-bold text-base-content/70">Current Password</span>
+                                </label>
+                                <div className="input input-bordered w-full flex items-center gap-3">
+                                    <Lock className="w-4 h-4 text-base-content/30" />
+                                    <input type="password" name="current_password" placeholder="••••••••" className="grow font-medium" />
+                                </div>
+                            </div>
                             <div className="form-control">
                                 <label className="label py-1">
                                     <span className="label-text font-bold text-base-content/70">New Password</span>

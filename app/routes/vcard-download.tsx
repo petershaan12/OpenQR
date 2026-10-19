@@ -14,22 +14,26 @@ export async function loader({ params }: LoaderFunctionArgs) {
     const { qr, phones } = data;
     const displayName = `${qr.name || ""} ${qr.surname || ""}`.trim();
 
+    // RFC 6350 text escaping; also stops CR/LF from injecting extra properties
+    const esc = (v: unknown) => String(v ?? "").replace(/\\/g, "\\\\").replace(/[;,]/g, "\\$&").replace(/\r?\n|\r/g, "\\n");
+    const oneLine = (v: unknown) => String(v ?? "").replace(/[\r\n]/g, "");
+
     let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
-    vcard += `FN:${displayName}\n`;
-    vcard += `N:${qr.surname || ""};${qr.name || ""};;;\n`;
+    vcard += `FN:${esc(displayName)}\n`;
+    vcard += `N:${esc(qr.surname)};${esc(qr.name)};;;\n`;
 
     if (qr.title) {
-        vcard += `TITLE:${qr.title}\n`;
+        vcard += `TITLE:${esc(qr.title)}\n`;
     }
 
     phones.forEach((p: any) => {
         if (p.value) {
-            vcard += `TEL;TYPE=CELL:${p.value}\n`;
+            vcard += `TEL;TYPE=CELL:${esc(p.value)}\n`;
         }
     });
 
     if (qr.email) {
-        vcard += `EMAIL;TYPE=INTERNET:${qr.email}\n`;
+        vcard += `EMAIL;TYPE=INTERNET:${esc(qr.email)}\n`;
     }
 
     if (qr.social_network) {
@@ -44,12 +48,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
             Object.entries(social).forEach(([key, val]) => {
                 if (val) {
                     const url = String(val).startsWith('http') ? val : `https://${val}`;
-                    vcard += `URL;TYPE=${key}:${url}\n`;
+                    vcard += `URL;TYPE=${key.replace(/[^A-Za-z0-9-]/g, "")}:${oneLine(url)}\n`;
                 }
             });
         } catch (e) {
             const url = String(qr.social_network).startsWith('http') ? qr.social_network : `https://${qr.social_network}`;
-            vcard += `URL:${url}\n`;
+            vcard += `URL:${oneLine(url)}\n`;
         }
     }
 
@@ -58,8 +62,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
         const mimeType = parts[0].split(':')[1].split(';')[0];
         const base64Data = parts[1];
         if (base64Data) {
-            const type = mimeType.split('/')[1].toUpperCase();
-            vcard += `PHOTO;TYPE=${type};ENCODING=b:${base64Data}\n`;
+            const type = mimeType.split('/')[1].toUpperCase().replace(/[^A-Z0-9]/g, "");
+            vcard += `PHOTO;TYPE=${type};ENCODING=b:${oneLine(base64Data)}\n`;
         }
     }
 
@@ -69,7 +73,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     return new Response(vcard, {
         headers: {
             "Content-Type": "text/vcard",
-            "Content-Disposition": `attachment; filename="${displayName.replace(/\s+/g, '_')}.vcf"`,
+            "Content-Disposition": `attachment; filename="${displayName.replace(/[^A-Za-z0-9._-]+/g, '_') || "contact"}.vcf"`,
         },
     });
 }

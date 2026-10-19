@@ -81,13 +81,14 @@ export async function createUser(data: {
   password?: string;
   role?: string;
 }): Promise<void> {
+  if (!data.password) throw new Response("Password is required", { status: 400 });
   const db = getDb();
   await db.query(
     "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
     [
       data.name,
       data.email,
-      bcrypt.hashSync(data.password || "password", 10), // Hash password
+      bcrypt.hashSync(data.password, 10),
       data.role || "user",
     ],
   );
