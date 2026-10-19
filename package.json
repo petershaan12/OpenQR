@@ -1,5 +1,5 @@
 {
-  "name": "army-qrcode",
+  "name": "openqrcard",
   "private": true,
   "type": "module",
   "scripts": {

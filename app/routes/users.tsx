@@ -123,7 +123,7 @@ export default function Users() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => { setEditingUser(null); modalRef.current?.showModal(); }} className="btn-army">
+                    <button onClick={() => { setEditingUser(null); modalRef.current?.showModal(); }} className="btn-brand">
                         <Plus className="w-4 h-4" />
                         Add User
                     </button>

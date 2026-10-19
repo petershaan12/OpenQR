@@ -62,7 +62,7 @@ export default function Login() {
               <QrCode className="w-7 h-7 text-white" strokeWidth={2} />
             </div>
             <h1 className="text-2xl font-bold text-base-content">
-              Army<span className="text-red-600">QR</span>Code
+              Open<span className="text-red-600">QR</span>Card
             </h1>
             <p className="text-base-content/50 text-sm mt-1">
               Sign in to your account
@@ -90,7 +90,7 @@ export default function Login() {
                   name="email"
                   type="email"
                   className="input input-bordered w-full pl-11"
-                  placeholder="admin@armysecurity.com"
+                  placeholder="admin@example.com"
                   required
                 />
               </div>
@@ -118,7 +118,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-army w-full justify-center py-6 text-base disabled:opacity-70 disabled:cursor-not-allowed"
+              className="btn-brand w-full justify-center py-6 text-base disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

@@ -3,11 +3,11 @@ version: "3.9"
 services:
   mysql:
     image: mysql:8.0
-    container_name: army_qrcode_mysql
+    container_name: qrcard_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Indonesia77}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-army_qrcode}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-qrcard}
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
@@ -21,7 +21,7 @@ services:
           "-h",
           "localhost",
           "-uroot",
-          "-p${MYSQL_ROOT_PASSWORD:-Indonesia77}",
+          "-p${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}",
         ]
       interval: 10s
       timeout: 5s
@@ -31,7 +31,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: army_qrcode_app
+    container_name: qrcard_app
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -39,8 +39,8 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: root
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Indonesia77}
-      DB_NAME: ${MYSQL_DATABASE:-army_qrcode}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      DB_NAME: ${MYSQL_DATABASE:-qrcard}
       SESSION_SECRET: ${SESSION_SECRET}
     depends_on:
       mysql:

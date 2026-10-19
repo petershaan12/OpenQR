@@ -13,11 +13,11 @@ import "./app.css";
 
 export const meta: Route.MetaFunction = () => {
     return [
-        { title: "ArmyQRCode - Smart QR Code Generator" },
-        { name: "description", content: "Create, manage, and track dynamic QR codes with ArmyQRCode. Professional tools for digital assets." },
+        { title: "OpenQRCard - Smart QR Code Generator" },
+        { name: "description", content: "Create, manage, and track dynamic QR codes with OpenQRCard. Professional tools for digital assets." },
         { name: "theme-color", content: "#dc2626" },
-        { property: "og:title", content: "ArmyQRCode - Smart QR Code Generator" },
-        { property: "og:description", content: "Create, manage, and track dynamic QR codes with ArmyQRCode." },
+        { property: "og:title", content: "OpenQRCard - Smart QR Code Generator" },
+        { property: "og:description", content: "Create, manage, and track dynamic QR codes with OpenQRCard." },
     ];
 };
 

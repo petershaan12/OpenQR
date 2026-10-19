@@ -69,7 +69,7 @@ export default function UserModal({
                         <form method="dialog">
                             <button className="btn btn-ghost font-bold">Cancel</button>
                         </form>
-                        <button type="submit" name="_action" value={editingUser ? "update" : "create"} className="btn-army px-6 gap-2">
+                        <button type="submit" name="_action" value={editingUser ? "update" : "create"} className="btn-brand px-6 gap-2">
                             {editingUser ? <Save className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                             {editingUser ? "Save Changes" : "Create User"}
                         </button>

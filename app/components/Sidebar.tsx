@@ -53,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-base-content">
-                                Army<span className="text-red-600">QR</span>
+                                Open<span className="text-red-600">QR</span>
                             </h1>
                             <p className="text-[11px] text-base-content/40 -mt-0.5 whitespace-nowrap">
                                 Management System

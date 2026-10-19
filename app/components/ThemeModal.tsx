@@ -184,7 +184,7 @@ export default function ThemeModal({
                             name="_action"
                             value={editingTheme ? "update" : "create"}
                             disabled={isSubmitting}
-                            className="btn-army px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="btn-brand px-6 gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />

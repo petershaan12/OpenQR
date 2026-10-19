@@ -24,8 +24,8 @@ cd qr-code
 Buat/cek `.env` di root project:
 
 ```env
-MYSQL_ROOT_PASSWORD=Indonesia77
-MYSQL_DATABASE=army_qrcode
+MYSQL_ROOT_PASSWORD=your_password
+MYSQL_DATABASE=qrcard
 SESSION_SECRET=replace-with-strong-random-secret
 MYSQL_PORT=3306
 APP_PORT=3000
@@ -60,19 +60,19 @@ SQL schema+seed ada di:
 Jalankan command ini (Linux/bash):
 
 ```bash
-docker exec -i army_qrcode_mysql mysql -uroot -p"Indonesia77" "army_qrcode" < database/init.sql
+docker exec -i qrcard_mysql mysql -uroot -p"your_password" "qrcard" < database/init.sql
 ```
 
 Untuk PowerShell:
 
 ```powershell
-Get-Content .\database\init.sql | docker exec -i army_qrcode_mysql mysql -uroot -pIndonesia77 army_qrcode
+Get-Content .\database\init.sql | docker exec -i qrcard_mysql mysql -uroot -pyour_password qrcard
 ```
 
 Validasi tabel:
 
 ```bash
-docker exec -it army_qrcode_mysql mysql -uroot -pIndonesia77 -e "USE army_qrcode; SHOW TABLES;"
+docker exec -it qrcard_mysql mysql -uroot -pyour_password -e "USE qrcard; SHOW TABLES;"
 ```
 
 Catatan:
@@ -137,14 +137,14 @@ Solusi:
 - Pastikan command menyertakan nama DB, contoh:
 
 ```bash
-docker exec -i army_qrcode_mysql mysql -uroot -p"Indonesia77" "army_qrcode" < database/init.sql
+docker exec -i qrcard_mysql mysql -uroot -p"your_password" "qrcard" < database/init.sql
 ```
 
 ### C. Domain tidak resolve ke app
 Checklist:
 - DNS domain sudah pointing ke server
 - Nginx config `proxy_pass` ke `127.0.0.1:3001`
-- `docker compose ps` menunjukkan `army_qrcode_app` status up
+- `docker compose ps` menunjukkan `qrcard_app` status up
 - Port `3001` tidak diblok firewall internal
 
 ## 8. Security Notes (Production)

@@ -62,23 +62,23 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Optional seed data
 INSERT INTO users (id, name, email, password, role)
-VALUES (1, 'Admin', 'admin@armysecurity.com', '$2b$10$4HQSUYgqGHY3.NPlmNZP5.iz5jJ8hPZb7id8RUYrWcxaffVz.BoMa', 'admin')
+VALUES (1, 'Admin', 'admin@example.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO themes (id, name, primary_color, legal_info, user_id)
 VALUES
-  (1, 'ARMY', '#DC2626', '© 2024 Army Security. All Rights Reserved.', 1),
-  (2, 'RPQ', '#2563EB', '© 2024 RPQ Corp. All Rights Reserved.', 1)
+  (1, 'Red', '#DC2626', '© 2026 Your Company. All Rights Reserved.', 1),
+  (2, 'Blue', '#2563EB', '© 2026 Your Company. All Rights Reserved.', 1)
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO qrcodes (id, user_id, name, surname, title, email, social_network, theme_id, status, scans, unique_id)
-VALUES (1, 1, 'Peter', 'Shaan', 'Fullstack Development', 'peter@armysecurity.com', '{"Website":"https://petershaan.net","Instagram":"https://instagram.com/petershaan_"}', 1, 'published', 124, 'peter-shaan-782')
+VALUES (1, 1, 'John', 'Doe', 'Software Engineer', 'john@example.com', '{"Website":"https://petershaan.net","Instagram":"https://instagram.com/petershaan_"}', 1, 'published', 124, 'john-doe')
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO qrcode_phones (id, qrcode_id, phone)
-VALUES (1, 1, '081902102020')
+VALUES (1, 1, '081234567890')
 ON DUPLICATE KEY UPDATE id = id;
 
 INSERT INTO notifications (id, user_id, title, message, type)
-VALUES (1, 1, 'Welcome!', 'Welcome to ArmyQR Code Management System.', 'success')
+VALUES (1, 1, 'Welcome!', 'Welcome to OpenQRCard.', 'success')
 ON DUPLICATE KEY UPDATE id = id;

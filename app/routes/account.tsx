@@ -170,7 +170,7 @@ export default function Account() {
                         </div>
 
                         <div className="pt-2">
-                            <button type="submit" name="_action" value="update_profile" className="btn-army px-6 gap-2">
+                            <button type="submit" name="_action" value="update_profile" className="btn-brand px-6 gap-2">
                                 <Save className="w-4 h-4" />
                                 Update Profile
                             </button>

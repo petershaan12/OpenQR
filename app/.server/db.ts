@@ -8,8 +8,8 @@ export function getDb() {
       host: process.env.DB_HOST || "localhost",
       port: parseInt(process.env.DB_PORT || "3306"),
       user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "Indonesia77",
-      database: process.env.DB_NAME || "army_qrcode",
+      password: process.env.DB_PASSWORD || "",
+      database: process.env.DB_NAME || "qrcard",
       waitForConnections: true,
       connectionLimit: 10,
     });
