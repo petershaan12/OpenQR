@@ -72,6 +72,19 @@ export default function Account() {
                     headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
                     body: JSON.stringify({ current_password: currentPassword, password: newPassword }),
                 });
+
+                if (!response.ok) {
+                    const data = await response.json().catch(() => null);
+                    setSubmitMessage({ error: data?.error || "Failed to update password" });
+                    setSubmitting(false);
+                    return;
+                }
+
+                if (user?.must_change_password) {
+                    const updatedUser = { ...user, must_change_password: false };
+                    setUser(updatedUser);
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                }
             }
 
             if (!response?.ok) {
@@ -105,6 +118,12 @@ export default function Account() {
     return (
         <DashboardLayout title="Account Settings" subtitle="Manage your profile" user={user} notifications={[]}>
             <div className="max-w-2xl space-y-6 pb-10">
+                {user?.must_change_password && (
+                    <div className="alert alert-warning rounded-lg shadow-sm font-bold">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>You are using the default password. Please change it before continuing.</span>
+                    </div>
+                )}
                 {submitMessage?.success && (
                     <div className="alert alert-success rounded-lg shadow-sm font-bold text-white">
                         <Check className="w-5 h-5" />

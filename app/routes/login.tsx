@@ -50,9 +50,9 @@ export default function Login() {
       }
 
       // Save user to localStorage
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("user", JSON.stringify({ ...data.user, must_change_password: !!data.must_change_password }));
 
-      navigate("/dashboard");
+      navigate(data.must_change_password ? "/account" : "/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to login. Check your connection.");
     } finally {

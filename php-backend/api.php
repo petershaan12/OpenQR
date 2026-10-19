@@ -189,6 +189,14 @@ foreach ($routes as $route => $handler) {
     
     if (preg_match('#^' . $regexPattern . '$#', $path, $matches)) {
         array_shift($matches); // Remove full match
+
+        // Logged in with the default password: only allow what the account page and public cards need
+        $allowedWhileMustChange = ['POST:/auth/login', 'POST:/auth/logout', 'GET:/auth/me', 'PUT:/users/me', 'PATCH:/users/me',
+            'PUT:/users/me/password', 'PATCH:/users/me/password', 'GET:/qrcodes/public/{uniqueId}',
+            'GET:/qrcodes/{uniqueId}/vcard', 'POST:/qrcodes/{uniqueId}/increment'];
+        if (!empty($_SESSION['must_change_password']) && !in_array($route, $allowedWhileMustChange, true)) {
+            sendJsonResponse(['error' => 'Password change required', 'must_change_password' => true], 403);
+        }
         
         // Call the handler with captured parameters
         call_user_func_array($handler, $matches);

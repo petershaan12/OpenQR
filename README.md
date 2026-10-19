@@ -143,7 +143,7 @@ Requirements: **Node.js 20+**, **PHP 7.4+** (with `pdo_mysql`), and **MySQL**.
 
 4. **Import the database**: cPanel → *phpMyAdmin* → select your database → *Import* → choose `database/init.sql` → *Go*.
 
-5. **Done!** Open your domain and log in with `admin@example.com` / `password`. **Change the password right away** from the Account page.
+5. **Done!** Open your domain and log in with `admin@example.com` / `password`. On first login with the default password you'll be redirected to the Account page and must change it (min. 8 characters) before using the app. Logins are limited to 5 failed attempts per 15 minutes per IP and email.
 
 ### Updating
 

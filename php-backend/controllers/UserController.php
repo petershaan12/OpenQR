@@ -114,9 +114,14 @@ class UserController {
             sendErrorResponse('Current password is incorrect', 400);
         }
 
+        if (!is_string($input['password']) || strlen($input['password']) < 8 || $input['password'] === 'password') {
+            sendErrorResponse('New password must be at least 8 characters and not the default password', 400);
+        }
+
         // Update the password
         $updateData = ['password' => $input['password']];
         $this->userService->updateCurrentUser($userId, $updateData);
+        unset($_SESSION['must_change_password']);
 
         sendJsonResponse(['success' => true, 'message' => 'Password updated successfully']);
     }
