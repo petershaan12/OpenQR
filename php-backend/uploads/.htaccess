@@ -1,16 +1,45 @@
-# Allow direct access to images and videos
+# Allow direct access to images and videos only; never execute scripts here
 <IfModule mod_rewrite.c>
     RewriteEngine Off
 </IfModule>
 
-# Allow image and video files
-<FilesMatch "\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$">
-    Order Allow,Deny
-    Allow from all
-</FilesMatch>
+# Disable PHP execution
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .phar .phps
+RemoveType .php .phtml .phar .phps
 
-# Block all other files
-<FilesMatch "^(?!.*\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$)">
+# Block all files by default
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
     Order Deny,Allow
     Deny from all
+</IfModule>
+
+# Allow image and video files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Allow from all
+    </IfModule>
+</FilesMatch>
+
+# Explicitly deny scripts and dotfiles (overrides the allow above, e.g. shell.php.jpg is still served as an image only)
+<FilesMatch "(\.(php|phtml|phar|phps)$|^\.)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
 </FilesMatch>

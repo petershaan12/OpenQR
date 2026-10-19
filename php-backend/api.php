@@ -8,15 +8,12 @@ require_once 'controllers/UploadController.php';
 require_once 'config/session.php';
 require_once 'helpers/response.php';
 
-// Enable CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+// No CORS headers: the app is served same-origin (Vite dev server proxies /php-backend and /api)
 
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
+// CSRF protection: state-changing requests must carry X-Requested-With (cannot be set cross-site without CORS preflight)
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH', 'DELETE'], true)
+    && ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'XMLHttpRequest') {
+    sendErrorResponse('Missing X-Requested-With header', 403);
 }
 
 // Parse the request

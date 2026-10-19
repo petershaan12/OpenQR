@@ -81,7 +81,7 @@ export default function Users() {
             const API_URL = import.meta.env.VITE_API_URL || "/php-backend/api.php";
             const res = await fetch(`${API_URL}?path=/users/${id}`, {
                 method: "DELETE",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
             });
 
             if (res.ok) {

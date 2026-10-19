@@ -98,6 +98,7 @@ export default function PublicCard() {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
                     },
                 }).catch(() => { }); // Fire and forget
 

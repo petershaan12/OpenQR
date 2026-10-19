@@ -31,6 +31,7 @@ class AuthController {
             sendErrorResponse('Invalid email or password', 401);
         }
 
+        session_regenerate_id(true);
         login($user['id']);
 
         sendJsonResponse([

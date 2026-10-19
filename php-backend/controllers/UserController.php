@@ -16,7 +16,7 @@ class UserController {
             sendErrorResponse('Method not allowed', 405);
         }
 
-        requireAuth();
+        requireAdmin();
         
         $users = $this->userService->getAll();
 
@@ -28,7 +28,7 @@ class UserController {
             sendErrorResponse('Method not allowed', 405);
         }
 
-        requireAuth();
+        requireAdmin();
         
         $user = $this->userService->findById($id);
 
@@ -47,7 +47,7 @@ class UserController {
             sendErrorResponse('Method not allowed', 405);
         }
 
-        requireAuth();
+        requireAdmin();
         
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -70,7 +70,7 @@ class UserController {
             sendErrorResponse('Method not allowed', 405);
         }
 
-        requireAuth();
+        requireAdmin();
         
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -88,6 +88,7 @@ class UserController {
         
         $userId = getCurrentUserId();
         $input = json_decode(file_get_contents('php://input'), true);
+        unset($input['password']); // Password changes go through updatePassword()
 
         $this->userService->updateCurrentUser($userId, $input);
 
@@ -108,6 +109,11 @@ class UserController {
             sendErrorResponse('Password is required', 400);
         }
 
+        $currentPassword = $input['current_password'] ?? '';
+        if (!is_string($currentPassword) || !$this->userService->verifyPassword($userId, $currentPassword)) {
+            sendErrorResponse('Current password is incorrect', 400);
+        }
+
         // Update the password
         $updateData = ['password' => $input['password']];
         $this->userService->updateCurrentUser($userId, $updateData);
@@ -120,7 +126,7 @@ class UserController {
             sendErrorResponse('Method not allowed', 405);
         }
 
-        requireAuth();
+        requireAdmin();
         
         $this->userService->delete($id);
 

@@ -27,7 +27,11 @@ class Database {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
-            throw new Exception("Connection failed: " . $e->getMessage());
+            error_log("Database connection failed: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Database connection failed']);
+            exit;
         }
     }
 

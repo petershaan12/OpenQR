@@ -120,6 +120,7 @@ export default function Dashboard() {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
         },
       });
 

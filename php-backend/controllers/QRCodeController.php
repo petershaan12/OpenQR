@@ -55,6 +55,10 @@ class QRCodeController {
 
         $input['user_id'] = getCurrentUserId();
 
+        if (!$this->qrCodeService->isThemeAccessible($input['theme_id'], $input['user_id'])) {
+            sendErrorResponse('Invalid theme', 400);
+        }
+
         $qrCode = $this->qrCodeService->createQRCode($input);
 
         sendJsonResponse($qrCode, 201);
@@ -70,8 +74,15 @@ class QRCodeController {
         $input = json_decode(file_get_contents('php://input'), true);
 
         $userId = getCurrentUserId();
+        if (isset($input['theme_id']) && !$this->qrCodeService->isThemeAccessible($input['theme_id'], $userId)) {
+            sendErrorResponse('Invalid theme', 400);
+        }
+
         $result = $this->qrCodeService->updateQRCode($id, $userId, $input);
 
+        if ($result === null) {
+            sendErrorResponse('QR Code not found', 404);
+        }
         if (!$result) {
             sendErrorResponse('Failed to update QR Code', 500);
         }

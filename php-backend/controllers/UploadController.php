@@ -35,9 +35,7 @@ class UploadController {
         $file = $_FILES['image'];
 
         // Validate file type
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
 
         $isImage = in_array($mimeType, $this->allowedImageTypes);
         $isVideo = in_array($mimeType, $this->allowedVideoTypes);
@@ -92,26 +90,28 @@ class UploadController {
         $mediaData = $input['image'];
         $isVideo = false;
 
-        // Parse base64 data (image or video)
-        if (preg_match('/^data:image\/(\w+);base64,/', $mediaData, $matches)) {
-            $extension = $matches[1];
+        // Parse base64 data (image or video); declared type must be in the allowlist
+        if (preg_match('/^data:(image\/[\w.+-]+|video\/[\w.+-]+);base64,/', $mediaData, $matches)
+            && (in_array($matches[1], $this->allowedImageTypes) || in_array($matches[1], $this->allowedVideoTypes))) {
+            $isVideo = strpos($matches[1], 'video/') === 0;
             $mediaData = substr($mediaData, strpos($mediaData, ',') + 1);
-        } elseif (preg_match('/^data:video\/(\w+);base64,/', $mediaData, $matches)) {
-            $extension = $matches[1];
-            $mediaData = substr($mediaData, strpos($mediaData, ',') + 1);
-            $isVideo = true;
-            // Map video extensions
-            if ($extension === 'quicktime') $extension = 'mov';
-            if ($extension === 'x-msvideo') $extension = 'avi';
         } else {
             sendErrorResponse('Invalid base64 format. Allowed: images (JPG, PNG, GIF, WEBP) and videos (MP4, WEBM, MOV)', 400);
         }
 
         // Decode base64
-        $decodedMedia = base64_decode($mediaData);
+        $decodedMedia = base64_decode($mediaData, true);
         if ($decodedMedia === false) {
             sendErrorResponse('Failed to decode base64 data', 400);
         }
+
+        // Verify actual content type; extension comes from the detected MIME, never from user input
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($decodedMedia);
+        $allowedTypes = $isVideo ? $this->allowedVideoTypes : $this->allowedImageTypes;
+        if (!in_array($mimeType, $allowedTypes)) {
+            sendErrorResponse('File content does not match an allowed type', 400);
+        }
+        $extension = $this->getExtension($mimeType);
 
         // Validate size based on type
         $maxSize = $isVideo ? $this->maxVideoSize : $this->maxImageSize;
@@ -155,7 +155,10 @@ class UploadController {
             sendErrorResponse('Filename required', 400);
         }
 
-        $filename = basename($input['filename']); // Prevent directory traversal
+        $filename = $input['filename'];
+        if (!is_string($filename) || !preg_match('/^(img|vid)_[A-Za-z0-9_-]+\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$/', $filename)) {
+            sendErrorResponse('Invalid filename', 400);
+        }
         $filepath = $this->uploadDir . $filename;
 
         if (file_exists($filepath)) {

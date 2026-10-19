@@ -46,7 +46,7 @@ export default function Account() {
             if (actionType === "update_profile") {
                 response = await fetch(`${API_URL}?path=/users/me`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
                     body: JSON.stringify({ name, email, avatar: avatar || null }),
                 });
 
@@ -59,6 +59,7 @@ export default function Account() {
                 const formData = new FormData(e.target as HTMLFormElement);
                 const newPassword = formData.get("new_password") as string;
                 const confirmPassword = formData.get("confirm_password") as string;
+                const currentPassword = formData.get("current_password") as string;
 
                 if (newPassword !== confirmPassword) {
                     setSubmitMessage({ error: "Passwords do not match" });
@@ -68,8 +69,8 @@ export default function Account() {
 
                 response = await fetch(`${API_URL}?path=/users/me/password`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ password: newPassword }),
+                    headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+                    body: JSON.stringify({ current_password: currentPassword, password: newPassword }),
                 });
             }
 

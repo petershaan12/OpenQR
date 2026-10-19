@@ -143,6 +143,13 @@ class QRCodeService {
     }
 
     public function updateQRCode($qrId, $userId, $data) {
+        // Ownership check before touching the QR code or its phones
+        $stmt = $this->db->prepare("SELECT id FROM qrcodes WHERE id = ? AND user_id = ?");
+        $stmt->execute([$qrId, $userId]);
+        if (!$stmt->fetch()) {
+            return null;
+        }
+
         $fields = [];
         $values = [];
         
@@ -200,6 +207,12 @@ class QRCodeService {
         }
 
         return $result;
+    }
+
+    public function isThemeAccessible($themeId, $userId) {
+        $stmt = $this->db->prepare("SELECT id FROM themes WHERE id = ? AND (user_id = ? OR user_id IS NULL)");
+        $stmt->execute([$themeId, $userId]);
+        return (bool) $stmt->fetch();
     }
 
     public function deleteQRCode($qrId, $userId) {

@@ -18,7 +18,7 @@ export async function uploadMedia(base64Data: string): Promise<string> {
 
   const response = await fetch(`${API_URL}?path=/upload/base64`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
     credentials: "include",
     body: JSON.stringify({ image: dataToUpload }),
   });
@@ -44,7 +44,7 @@ export async function createQRCode(formData: any): Promise<any> {
 
   const response = await fetch(`${API_URL}?path=/qrcodes`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
     credentials: "include",
     body: JSON.stringify({
       ...formData,
@@ -69,7 +69,7 @@ export async function updateQRCode(id: string, formData: any): Promise<any> {
 
   const response = await fetch(`${API_URL}?path=/qrcodes/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
     credentials: "include",
     body: JSON.stringify({
       ...formData,

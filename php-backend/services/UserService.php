@@ -26,6 +26,13 @@ class UserService {
         return $stmt->fetch();
     }
 
+    public function verifyPassword($id, $password) {
+        $stmt = $this->db->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->execute([$id]);
+        $user = $stmt->fetch();
+        return $user && password_verify($password, $user['password']);
+    }
+
     public function getAll() {
         $stmt = $this->db->prepare("
             SELECT id, name, email, role, avatar, created_at 
